@@ -2,6 +2,7 @@ import math
 from dataclasses import dataclass, field
 from typing import List, Union, Optional
 
+
 @dataclass
 class Token:
     text: str
@@ -25,8 +26,6 @@ class TopkTokenModel:
     topp: float = 1.0
 
     topk_per_token: int = 5  # number of topk tokens to generate for each token
-    generated_answer: Optional[str] = None  # generated answer from model, to display in frontend
-    display_whitespace: bool = False
 
     def generate_topk_per_token(self, text: str) -> List[Token]:
         """
@@ -35,9 +34,15 @@ class TopkTokenModel:
         """
         raise NotImplementedError
 
-    def generate_inputs_prob(self, text: str) -> List[Token]:
+    def generate_inputs_prob(self, text: str, history: Optional[List[str]] = None) -> List[Token]:
         """
         Generate prob and text for each token of the input text.
         This function is used to visualize the ppl.
+        """
+        raise NotImplementedError
+
+    def generate_answer(self, text: str, history: Optional[List[str]] = None) -> str:
+        """
+        Generate answer from the model.
         """
         raise NotImplementedError

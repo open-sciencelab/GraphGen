@@ -1,3 +1,8 @@
 tqdm
 openai
 python-dotenv
+numpy
+networkx
+graspologic
+tiktoken
+transformers

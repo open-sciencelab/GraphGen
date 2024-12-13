@@ -2,7 +2,7 @@ import math
 from dataclasses import dataclass
 from typing import List, Dict, Optional
 from openai import OpenAI
-from . import TopkTokenModel, Token
+from models import TopkTokenModel, Token
 
 def openai_top_response_tokens(response: Dict) -> List[Token]:
     token_logprobs = response.choices[0].logprobs.content

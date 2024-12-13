@@ -1,6 +1,6 @@
 import asyncio
 
-from log import logger
+from .log import logger
 
 
 def create_event_loop() -> asyncio.AbstractEventLoop:

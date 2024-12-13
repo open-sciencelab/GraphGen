@@ -85,9 +85,9 @@ class NetworkXStorage(BaseGraphStorage):
                 f"Loaded graph from {self._graphml_xml_file} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges"
             )
         self._graph = preloaded_graph or nx.Graph()
-        self._node_embed_algorithms = {
-            "node2vec": self._node2vec_embed,
-        }
+        # self._node_embed_algorithms = {
+        #     "node2vec": self._node2vec_embed,
+        # }
 
     async def index_done_callback(self):
         NetworkXStorage.write_nx_graph(self._graph, self._graphml_xml_file)

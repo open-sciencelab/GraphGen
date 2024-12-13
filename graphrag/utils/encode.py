@@ -25,7 +25,7 @@ def get_tokenizer(tokenizer_name: str = "cl100k_base"):
     else:
         raise ValueError("Hugging Face Transformers is not available, please install it first.")
 
-def encode_string(text: str, model_name: str = "gpt-3.5-turbo") -> List[str]:
+def encode_string(text: str, model_name: str = "cl100k_base") -> List[str]:
     """
     Encode text to tokens
 
@@ -36,7 +36,7 @@ def encode_string(text: str, model_name: str = "gpt-3.5-turbo") -> List[str]:
     tokenizer = get_tokenizer(model_name)
     return tokenizer.encode(text)
 
-def decode_tokens(tokens: List[str], model_name: str = "gpt-3.5-turbo") -> str:
+def decode_tokens(tokens: List[str], model_name: str = "cl100k_base") -> str:
     """
     Decode tokens to text
 

@@ -2,12 +2,14 @@ import numpy as np
 
 from dataclasses import dataclass
 from models.embedding import EmbeddingFunc
-from typing import Union
+from typing import Union, Generic, TypeVar
+
+T = TypeVar("T")
 
 @dataclass
 class StorageNameSpace:
-    namespace: str = None
     working_dir: str = None
+    namespace: str = None
 
     async def index_done_callback(self):
         """commit the storage operations after indexing"""
@@ -16,6 +18,31 @@ class StorageNameSpace:
     async def query_done_callback(self):
         """commit the storage operations after querying"""
         pass
+
+@dataclass
+class BaseKVStorage(Generic[T], StorageNameSpace):
+    embedding_func: EmbeddingFunc = None
+
+    async def all_keys(self) -> list[str]:
+        raise NotImplementedError
+
+    async def get_by_id(self, id: str) -> Union[T, None]:
+        raise NotImplementedError
+
+    async def get_by_ids(
+        self, ids: list[str], fields: Union[set[str], None] = None
+    ) -> list[Union[T, None]]:
+        raise NotImplementedError
+
+    async def filter_keys(self, data: list[str]) -> set[str]:
+        """return un-exist keys"""
+        raise NotImplementedError
+
+    async def upsert(self, data: dict[str, T]):
+        raise NotImplementedError
+
+    async def drop(self):
+        raise NotImplementedError
 
 @dataclass
 class BaseGraphStorage(StorageNameSpace):

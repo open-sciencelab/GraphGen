@@ -2,7 +2,7 @@ import os
 
 from dataclasses import dataclass
 from .base_storage import BaseKVStorage
-from graphrag.utils import logger, load_json, write_json
+from utils import logger, load_json, write_json
 
 @dataclass
 class JsonKVStorage(BaseKVStorage):

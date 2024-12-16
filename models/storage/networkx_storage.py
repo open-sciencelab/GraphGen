@@ -6,7 +6,7 @@ import numpy as np
 from typing import Any, Union, cast
 from dataclasses import dataclass
 from .base_storage import BaseGraphStorage
-from graphrag.utils import logger
+from utils import logger
 
 @dataclass
 class NetworkXStorage(BaseGraphStorage):

@@ -1,9 +1,9 @@
 from collections import Counter
-from .format import split_string_by_multi_markers
-from .encode import encode_string, decode_tokens
+from utils.format import split_string_by_multi_markers
+from utils.encode import encode_string, decode_tokens
 from models import BaseGraphStorage, TopkTokenModel
 from templates import ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT
-from .log import logger
+from utils.log import logger
 
 async def _handle_entity_relation_summary(
     entity_or_relation_name: str,

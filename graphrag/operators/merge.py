@@ -1,7 +1,8 @@
 from collections import Counter
 from utils.format import split_string_by_multi_markers
 from utils.encode import encode_string, decode_tokens
-from models import BaseGraphStorage, TopkTokenModel
+from models import TopkTokenModel
+from models.storage.base_storage import BaseGraphStorage
 from templates import ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT
 from utils.log import logger
 

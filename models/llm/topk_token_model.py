@@ -27,21 +27,21 @@ class TopkTokenModel:
 
     topk_per_token: int = 5  # number of topk tokens to generate for each token
 
-    def generate_topk_per_token(self, text: str) -> List[Token]:
+    async def generate_topk_per_token(self, text: str) -> List[Token]:
         """
         Generate prob, text and candidates for each token of the model's output.
         This function is used to visualize the inference process.
         """
         raise NotImplementedError
 
-    def generate_inputs_prob(self, text: str, history: Optional[List[str]] = None) -> List[Token]:
+    async def generate_inputs_prob(self, text: str, history: Optional[List[str]] = None) -> List[Token]:
         """
         Generate prob and text for each token of the input text.
         This function is used to visualize the ppl.
         """
         raise NotImplementedError
 
-    def generate_answer(self, text: str, history: Optional[List[str]] = None) -> str:
+    async def generate_answer(self, text: str, history: Optional[List[str]] = None) -> str:
         """
         Generate answer from the model.
         """

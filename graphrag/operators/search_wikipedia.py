@@ -1,9 +1,50 @@
+import asyncio
 from models import WikiSearch, OpenAIModel
 from models.storage.base_storage import BaseGraphStorage
 from templates import SEARCH_JUDGEMENT_PROMPT
 from utils import logger
 
-async def search_wikipedia(llm_client: OpenAIModel, wiki_search_client: WikiSearch, knowledge_graph_instance: BaseGraphStorage,) -> dict:
+
+async def _process_single_entity(entity_name: str,
+                                 description: str,
+                                 llm_client: OpenAIModel,
+                                 wiki_search_client: WikiSearch) -> tuple[str, None] | tuple[str, str]:
+    """
+    Process single entity
+
+    """
+    search_results = await wiki_search_client.search(entity_name)
+    if not search_results:
+        return entity_name, None
+    examples = "\n".join(SEARCH_JUDGEMENT_PROMPT["EXAMPLES"])
+    search_results.append("None of the above")
+
+    search_results_str = "\n".join([f"{i + 1}. {sr}" for i, sr in enumerate(search_results)])
+    prompt = SEARCH_JUDGEMENT_PROMPT["TEMPLATE"].format(
+        examples=examples,
+        entity_name=entity_name,
+        description=description,
+        search_results=search_results_str,
+    )
+    response = await llm_client.generate_answer(prompt)
+
+    try:
+        response = response.strip()
+        response = int(response)
+        if response < 1 or response >= len(search_results):
+            response = None
+        else:
+            response = await wiki_search_client.summary(search_results[response - 1])
+    except ValueError:
+        response = None
+
+    logger.info(f"Entity {entity_name} search result: {response}")
+
+    return entity_name, response
+
+async def search_wikipedia(llm_client: OpenAIModel,
+                           wiki_search_client: WikiSearch,
+                           knowledge_graph_instance: BaseGraphStorage,) -> dict:
     """
     Search wikipedia for entities
 
@@ -12,40 +53,21 @@ async def search_wikipedia(llm_client: OpenAIModel, wiki_search_client: WikiSear
     :param knowledge_graph_instance: knowledge graph instance
     :return: nodes with search results
     """
+
+
     nodes = await knowledge_graph_instance.get_all_nodes()
+    nodes = list(nodes)
     wiki_data = {}
-    for node in nodes:
-        entity_name = node[0].strip('"')
-        description = node[1]["description"]
-        search_results = await wiki_search_client.search(entity_name)
-        if not search_results:
-            continue
-        examples = "\n".join(SEARCH_JUDGEMENT_PROMPT["EXAMPLES"])
-        search_results.append("None of the above")
 
-        search_results_str = "\n".join([f"{i + 1}. {sr}" for i, sr in enumerate(search_results)])
-        prompt = SEARCH_JUDGEMENT_PROMPT["TEMPLATE"].format(
-            examples=examples,
-            entity_name=entity_name,
-            description=description,
-            search_results=search_results_str,
-        )
-        response = llm_client.generate_answer(prompt)
-        response = response.strip()
+    batch_size = 10
 
-        try:
-            response = int(response)
-            if response < 1 or response > len(search_results):
-                response = None
-        except ValueError:
-            response = None
-        if response is None or response == len(search_results):
-            continue
+    for i in range(0, len(nodes), batch_size):
+        batch_nodes = nodes[i:i + batch_size]
+        tasks = [
+            _process_single_entity(node[0].strip('"'), node[1]["description"], llm_client, wiki_search_client)
+            for node in batch_nodes
+        ]
+        results = await asyncio.gather(*tasks)
+        wiki_data.update({k: v for k, v in results if v is not None})
 
-        search_result = search_results[response - 1]
-
-        summary = await wiki_search_client.summary(search_result)
-        if summary:
-            logger.info(f"Wiki search result for {entity_name}: {summary}")
-            wiki_data[entity_name] = summary
     return wiki_data

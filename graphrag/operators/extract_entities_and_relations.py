@@ -62,12 +62,12 @@ async def extract_entities_and_relations(
             **ENTITY_EXTRACTION_PROMPT["EXAMPLES_FORMAT"], examples=example, input_text=content
         )
 
-        final_result = llm_client.generate_answer(hint_prompt)
+        final_result = await llm_client.generate_answer(hint_prompt)
         logger.info('First result: %s', final_result)
 
         history = pack_history_conversations(hint_prompt, final_result)
         for loop_index in range(max_loop):
-            glean_result = llm_client.generate_answer(text=ENTITY_EXTRACTION_PROMPT["CONTINUE"], history=history)
+            glean_result = await llm_client.generate_answer(text=ENTITY_EXTRACTION_PROMPT["CONTINUE"], history=history)
             logger.info(f"Loop {loop_index} glean: {glean_result}")
 
             history += pack_history_conversations(ENTITY_EXTRACTION_PROMPT["CONTINUE"], glean_result)
@@ -76,7 +76,7 @@ async def extract_entities_and_relations(
                 break
 
             # 是否结束循环
-            if_loop_result = llm_client.generate_answer(text=ENTITY_EXTRACTION_PROMPT["IF_LOOP"], history=history)
+            if_loop_result = await llm_client.generate_answer(text=ENTITY_EXTRACTION_PROMPT["IF_LOOP"], history=history)
             if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
             if if_loop_result != "yes":
                 break

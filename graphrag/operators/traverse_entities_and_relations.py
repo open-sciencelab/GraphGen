@@ -1,8 +1,8 @@
 from models import NetworkXStorage
 
-async def get_nodes_and_edges(graph_storage: NetworkXStorage):
+async def traverse_entities_and_relations(graph_storage: NetworkXStorage):
     """
-    Get nodes and edges from the graph storage
+    Get all entities and relations and their edges
     First, get all nodes
     Then, for each node, get all its edges
 

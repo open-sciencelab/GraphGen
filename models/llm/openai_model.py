@@ -31,7 +31,7 @@ class OpenAIModel(TopkTokenModel):
         assert self.api_key is not None, "Please provide api key to access openai api."
         self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
 
-    def _pre_generate(self, text: str, history: List[str]) -> Dict:
+    async def _pre_generate(self, text: str, history: List[str]) -> Dict:
         kwargs = {
             "temperature": self.temperature,
             "top_p": self.topp,
@@ -53,8 +53,8 @@ class OpenAIModel(TopkTokenModel):
         kwargs['messages']= messages
         return kwargs
 
-    def generate_topk_per_token(self, text: str, history: Optional[List[str]] = None) -> List[Token]:
-        kwargs = self._pre_generate(text, history)
+    async def generate_topk_per_token(self, text: str, history: Optional[List[str]] = None) -> List[Token]:
+        kwargs = await self._pre_generate(text, history)
         if self.topk_per_token > 0:
             kwargs["logprobs"] = True
             kwargs["top_logprobs"] = self.topk_per_token
@@ -68,8 +68,8 @@ class OpenAIModel(TopkTokenModel):
 
         return tokens
 
-    def generate_answer(self, text: str, history: Optional[List[str]] = None) -> str:
-        kwargs = self._pre_generate(text, history)
+    async def generate_answer(self, text: str, history: Optional[List[str]] = None) -> str:
+        kwargs = await self._pre_generate(text, history)
 
         completion = self.client.chat.completions.create(
             model=self.model_name,

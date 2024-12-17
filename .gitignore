@@ -3,3 +3,4 @@ __pycache__
 cache
 *.log
 *.pyc
+*.html

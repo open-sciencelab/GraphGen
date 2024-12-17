@@ -1,11 +1,26 @@
 import wikipedia
+from wikipedia import set_lang
 
-print(wikipedia.search("Java"))
+from typing import List
+from utils import detect_main_language
+from dataclasses import dataclass
 
-print(wikipedia.summary("Python (programming language)", auto_suggest=False, redirect=False))
 
-# print(wikipedia.page("Java").content)
+@dataclass
+class WikiSearch:
+    @staticmethod
+    def set_language(language: str):
+        assert language in ["en", "zh"], "Only support English and Chinese"
+        set_lang(language)
 
-# 根据搜索的语言，确定搜索的结果的语言
+    def search(self, query: str) -> List[str]:
+        self.set_language(detect_main_language(query))
+        return wikipedia.search(query)
 
-# from wikipedia import WikipediaPage
+    def summary(self, query: str) -> str:
+        self.set_language(detect_main_language(query))
+        return wikipedia.summary(query)
+
+    def page(self, query: str) -> str:
+        self.set_language(detect_main_language(query))
+        return wikipedia.page(query).content

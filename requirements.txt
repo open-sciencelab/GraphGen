@@ -6,3 +6,5 @@ networkx
 graspologic
 tiktoken
 transformers
+pyecharts
+wikipedia

@@ -6,11 +6,17 @@ from .llm.openai_model import OpenAIModel
 from .storage.networkx_storage import NetworkXStorage
 from .storage.json_storage import JsonKVStorage
 
+from .search.wiki_search import WikiSearch
+
 __all__ = [
+    # llm models
     "OpenAIModel",
     "TopkTokenModel",
     "Token",
+    # storage models
     "Chunk",
     "NetworkXStorage",
-    "JsonKVStorage"
+    "JsonKVStorage",
+    # search models
+    "WikiSearch",
 ]

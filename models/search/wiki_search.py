@@ -1,7 +1,7 @@
 import wikipedia
 from wikipedia import set_lang
 
-from typing import List
+from typing import List, Union
 from utils import detect_main_language
 from dataclasses import dataclass
 
@@ -13,14 +13,22 @@ class WikiSearch:
         assert language in ["en", "zh"], "Only support English and Chinese"
         set_lang(language)
 
-    def search(self, query: str) -> List[str]:
+    async def search(self, query: str) -> Union[List[str], None]:
         self.set_language(detect_main_language(query))
         return wikipedia.search(query)
 
-    def summary(self, query: str) -> str:
+    async def summary(self, query: str) -> Union[str, None]:
         self.set_language(detect_main_language(query))
-        return wikipedia.summary(query)
+        try:
+            result = wikipedia.summary(query, auto_suggest=False, redirect=False)
+        except wikipedia.exceptions.DisambiguationError as e:
+            result = None
+        return result
 
-    def page(self, query: str) -> str:
+    async def page(self, query: str) -> Union[str, None]:
         self.set_language(detect_main_language(query))
-        return wikipedia.page(query).content
+        try:
+            result = wikipedia.page(query, auto_suggest=False, redirect=False).content
+        except wikipedia.exceptions.DisambiguationError as e:
+            result = None
+        return result

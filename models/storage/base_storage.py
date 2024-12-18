@@ -98,6 +98,3 @@ class BaseGraphStorage(StorageNameSpace):
 
     async def embed_nodes(self, algorithm: str) -> tuple[np.ndarray, list[str]]:
         raise NotImplementedError("Node embedding is not used in lightrag.")
-
-    async def copy(self):
-        raise NotImplementedError

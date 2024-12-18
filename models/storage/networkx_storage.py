@@ -159,6 +159,3 @@ class NetworkXStorage(BaseGraphStorage):
         if algorithm not in self._node_embed_algorithms:
             raise ValueError(f"Node embedding algorithm {algorithm} not supported")
         return await self._node_embed_algorithms[algorithm]()
-
-    async def copy(self):
-        return self._graph.copy()

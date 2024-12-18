@@ -1,36 +1,45 @@
 from models import NetworkXStorage
-from utils import logger
+from utils import logger, yes_no_loss
+from templates import ANTI_DESCRIPTION_REPHRASING_PROMPT, STATEMENT_JUDGEMENT_PROMPT
+from models import OpenAIModel
 
-async def traverse_entities_and_relations(graph_storage: NetworkXStorage):
+async def traverse_relations(llm_client: OpenAIModel, graph_storage: NetworkXStorage) -> NetworkXStorage:
     """
-    Get all entities and relations and their edges
-    First, get all nodes
-    Then, for each node, get all its edges
+    Get all edges and traverse them
 
-    :param graph_storage:
+    :param llm_client: llm client
+    :param graph_storage: graph storage instance
     :return:
     """
-    nodes = await graph_storage.get_all_nodes()
+
     edges = await graph_storage.get_all_edges()
-    print(edges)
-    nodes_and_edges = []
-    for node in nodes:
-        logger.info(f"Traversing node {node}")
-        node_id = node[0]
-        node_data = node[1]
-        print("node_id", node_id)
-        edges = await graph_storage.get_node_edges(node_id)
-        print("edges", edges)
-        print(len(edges))
-    #     node_id = node[0]
-    #     node_data = node[1]
-    #     print(node_id)
-    #     print(node_data)
-    #     edges = await graph_storage.get_node_edges(node_id)
-    #     print(edges)
-    #     nodes_and_edges.append({
-    #         "node_id": node_id,
-    #         "node_data": node_data,
-    #         "edges": edges
-    #     })
-    # return nodes_and_edges
+    for edge in edges:
+        source_id = edge[0]
+        target_id = edge[1]
+        edge_data = edge[2]
+        description = edge_data["description"]
+        logger.info(f"Edge {source_id} -> {target_id} description: {description}")
+
+        # TODO: 出题过程可以使用其他数据扩增的方法
+        anti_description = await llm_client.generate_answer(
+            ANTI_DESCRIPTION_REPHRASING_PROMPT['TEMPLATE'].format(input_sentence=description)
+        )
+
+        judgement = await llm_client.generate_topk_per_token(
+            STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=description)
+        )
+        anti_judgement = await llm_client.generate_topk_per_token(
+            STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=anti_description)
+        )
+
+        loss = yes_no_loss(
+            [judgement[0].top_candidates, anti_judgement[0].top_candidates],
+            ['yes', 'no']
+        )
+
+        # 将loss加入到边的属性中
+        edge_data["loss"] = loss
+        await graph_storage.update_edge(source_id, target_id, edge_data)
+
+    return graph_storage
+

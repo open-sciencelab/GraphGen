@@ -23,7 +23,7 @@ class TopkTokenModel:
     repetition_penalty: float = 1.0
     num_beams: int = 1
     topk: int = 50
-    topp: float = 1.0
+    topp: float = 0
 
     topk_per_token: int = 5  # number of topk tokens to generate for each token
 

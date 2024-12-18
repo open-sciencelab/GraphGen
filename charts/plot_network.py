@@ -18,16 +18,15 @@ async def plot_network(networkx_storage: NetworkXStorage):
     for entity in entities:
         node_id = entity[0]
         node_data = entity[1]
-        nodes.append({"name": node_id, "symbolSize": 10, "category": node_data["entity_type"]})
+        nodes.append({"name": node_id, "symbolSize": 50, "category": node_data["entity_type"]})
 
     for relation in relations:
         source = relation[0]
         target = relation[1]
-        weight = relation[2]["weight"]
         links.append({
             "source": source,
             "target": target,
-            "value": weight
+            "value": 1
         })
 
     categories = list(set([node['category'] for node in nodes]))
@@ -43,7 +42,16 @@ async def plot_network(networkx_storage: NetworkXStorage):
              nodes,
              links,
              categories=categories,
-             layout="force"
+             layout="force",
+             edge_symbol=["circle", "arrow"],
+             edge_symbol_size=10,
+             linestyle_opts=opts.LineStyleOpts(
+                 width=1,
+                 opacity=0.7,
+                 curve=0.3
+             ),
+             label_opts=opts.LabelOpts(is_show=True),
+             repulsion=1000
              )
         .set_global_opts(title_opts=opts.TitleOpts(title="网络图"))
     )

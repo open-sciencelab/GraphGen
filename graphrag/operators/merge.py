@@ -111,28 +111,18 @@ async def merge_edges(
     :return: None
     """
 
-    weights = []
     source_ids = []
     descriptions = []
-    keywords = []
 
     edge = await knowledge_graph_instance.get_edge(src_id, tgt_id)
     if edge is not None:
-        weights.append(edge["weight"])
         source_ids.extend(
             split_string_by_multi_markers(edge["source_id"], ['<SEP>'])
         )
         descriptions.append(edge["description"])
-        keywords.extend(
-            split_string_by_multi_markers(edge["keywords"], ['<SEP>'])
-        )
 
-    weight = sum([dp["weight"] for dp in edges_data] + weights)
     description = '<SEP>'.join(
         sorted(set([dp["description"] for dp in edges_data] + descriptions))
-    )
-    keywords = '<SEP>'.join(
-        sorted(set([dp["keywords"] for dp in edges_data] + keywords))
     )
     source_id = '<SEP>'.join(
         set([dp["source_id"] for dp in edges_data] + source_ids)
@@ -157,9 +147,7 @@ async def merge_edges(
         src_id,
         tgt_id,
         edge_data=dict(
-            weight=weight,
             description=description,
-            keywords=keywords,
             source_id=source_id
         )
     )
@@ -168,6 +156,5 @@ async def merge_edges(
         src_id=src_id,
         tgt_id=tgt_id,
         description=description,
-        keywords=keywords
     )
     return edge_data

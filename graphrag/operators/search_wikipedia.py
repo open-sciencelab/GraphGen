@@ -38,7 +38,7 @@ async def _process_single_entity(entity_name: str,
     except ValueError:
         response = None
 
-    logger.info(f"Entity {entity_name} search result: {response}")
+    logger.info(f"Entity {entity_name} search result: {str(search_results)} response: {response}")
 
     return entity_name, response
 

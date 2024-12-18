@@ -18,7 +18,6 @@ async def traverse_relations(llm_client: OpenAIModel, graph_storage: NetworkXSto
         target_id = edge[1]
         edge_data = edge[2]
         description = edge_data["description"]
-        logger.info(f"Edge {source_id} -> {target_id} description: {description}")
 
         # TODO: 出题过程可以使用其他数据扩增的方法
         anti_description = await llm_client.generate_answer(
@@ -36,6 +35,8 @@ async def traverse_relations(llm_client: OpenAIModel, graph_storage: NetworkXSto
             [judgement[0].top_candidates, anti_judgement[0].top_candidates],
             ['yes', 'no']
         )
+
+        logger.info(f"Edge {source_id} -> {target_id} description: {description} loss: {loss}")
 
         # 将loss加入到边的属性中
         edge_data["loss"] = loss

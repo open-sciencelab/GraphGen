@@ -1,3 +1,4 @@
 from .entity_extraction import ENTITY_EXTRACTION_PROMPT
 from .entity_description_summarization import ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT
 from .search_judgement import SEARCH_JUDGEMENT_PROMPT
+from .anti_description_rephrasing import ANTI_DESCRIPTION_REPHRASING_PROMPT

@@ -118,7 +118,7 @@ class NetworkXStorage(BaseGraphStorage):
     async def get_all_edges(self) -> Union[list[dict], None]:
         return self._graph.edges(data=True)
 
-    async def get_node_edges(self, source_node_id: str):
+    async def get_node_edges(self, source_node_id: str) -> Union[list[tuple[str, str]], None]:
         if self._graph.has_node(source_node_id):
             return list(self._graph.edges(source_node_id))
         return None
@@ -126,10 +126,22 @@ class NetworkXStorage(BaseGraphStorage):
     async def upsert_node(self, node_id: str, node_data: dict[str, str]):
         self._graph.add_node(node_id, **node_data)
 
+    async def update_node(self, node_id: str, node_data: dict[str, str]):
+        if self._graph.has_node(node_id):
+            self._graph.nodes[node_id].update(node_data)
+        else:
+            logger.warning(f"Node {node_id} not found in the graph for update.")
+
     async def upsert_edge(
         self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]
     ):
         self._graph.add_edge(source_node_id, target_node_id, **edge_data)
+
+    async def update_edge(self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]):
+        if self._graph.has_edge(source_node_id, target_node_id):
+            self._graph.edges[(source_node_id, target_node_id)].update(edge_data)
+        else:
+            logger.warning(f"Edge {source_node_id} -> {target_node_id} not found in the graph for update.")
 
     async def delete_node(self, node_id: str):
         """

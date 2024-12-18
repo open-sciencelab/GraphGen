@@ -63,12 +63,18 @@ class BaseGraphStorage(StorageNameSpace):
     async def get_node(self, node_id: str) -> Union[dict, None]:
         raise NotImplementedError
 
+    async def update_node(self, node_id: str, node_data: dict[str, str]):
+        raise NotImplementedError
+
     async def get_all_nodes(self) -> Union[list[dict], None]:
         raise NotImplementedError
 
     async def get_edge(
         self, source_node_id: str, target_node_id: str
     ) -> Union[dict, None]:
+        raise NotImplementedError
+
+    async def update_edge(self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]):
         raise NotImplementedError
 
     async def get_all_edges(self) -> Union[list[dict], None]:

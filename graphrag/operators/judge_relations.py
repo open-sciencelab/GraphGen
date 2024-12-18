@@ -3,9 +3,9 @@ from utils import logger, yes_no_loss
 from templates import ANTI_DESCRIPTION_REPHRASING_PROMPT, STATEMENT_JUDGEMENT_PROMPT
 from models import OpenAIModel
 
-async def traverse_relations(llm_client: OpenAIModel, graph_storage: NetworkXStorage) -> NetworkXStorage:
+async def judge_relations(llm_client: OpenAIModel, graph_storage: NetworkXStorage) -> NetworkXStorage:
     """
-    Get all edges and traverse them
+    Get all edges and judge them
 
     :param llm_client: llm client
     :param graph_storage: graph storage instance
@@ -19,7 +19,6 @@ async def traverse_relations(llm_client: OpenAIModel, graph_storage: NetworkXSto
         edge_data = edge[2]
         description = edge_data["description"]
 
-        # TODO: 出题过程可以使用其他数据扩增的方法
         anti_description = await llm_client.generate_answer(
             ANTI_DESCRIPTION_REPHRASING_PROMPT['TEMPLATE'].format(input_sentence=description)
         )

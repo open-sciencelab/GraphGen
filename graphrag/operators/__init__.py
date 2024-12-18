@@ -1,3 +1,3 @@
 from .extract_entities_and_relations import extract_entities_and_relations
-from .traverse_relations import traverse_relations
+from .judge_relations import judge_relations
 from .search_wikipedia import search_wikipedia

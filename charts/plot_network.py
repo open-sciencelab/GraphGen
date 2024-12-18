@@ -18,7 +18,14 @@ async def plot_network(networkx_storage: NetworkXStorage):
     for entity in entities:
         node_id = entity[0]
         node_data = entity[1]
-        nodes.append({"name": node_id, "symbolSize": 50, "category": node_data["entity_type"]})
+        nodes.append({
+            "name": node_id,
+            "symbolSize": 50,
+            "category": node_data["entity_type"],
+            "tooltip": {
+                "formatter": f"{node_id}: {node_data['description']}"
+            }
+        })
 
     for relation in relations:
         source = relation[0]
@@ -26,7 +33,10 @@ async def plot_network(networkx_storage: NetworkXStorage):
         links.append({
             "source": source,
             "target": target,
-            "value": 1
+            "value": 1,
+            "tooltip": {
+                "formatter": f"{source} -> {target}: {relation[2]['description']}"
+            }
         })
 
     categories = list(set([node['category'] for node in nodes]))

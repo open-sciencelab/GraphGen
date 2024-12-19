@@ -9,9 +9,7 @@ from typing import List, cast
 from dataclasses import dataclass
 from utils import create_event_loop, logger, set_logger, compute_content_hash, chunk_by_token_size
 from models.storage.base_storage import StorageNameSpace
-from dotenv import load_dotenv
 
-load_dotenv()
 
 sys_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 set_logger(os.path.join(sys_path, "cache", "graphrag.log"))
@@ -37,16 +35,12 @@ class GraphRag:
     )
 
     # text chunking
-    chunk_size: int = 1200
+    chunk_size: int = 1024
     chunk_overlap_size: int = 100
 
     # llm
-    teacher_llm_client: OpenAIModel = OpenAIModel(
-        model_name="gpt-4o-mini",
-        api_key=os.getenv("OPENAI_API_KEY"),
-        base_url=os.getenv("OPENAI_BASE_URL")
-    )
-    # student_llm_client: TopkTokenModel = TopkTokenModel()
+    teacher_llm_client: OpenAIModel = None
+    student_llm_client: OpenAIModel = None
 
     # web search
     if_web_search: bool = False
@@ -129,7 +123,7 @@ class GraphRag:
         loop.run_until_complete(self.async_judge())
 
     async def async_judge(self):
-        _update_relations = await judge_relations(self.teacher_llm_client, self.graph_storage)
+        _update_relations = await judge_relations(self.student_llm_client, self.graph_storage)
         await _update_relations.index_done_callback()
 
     def traverse(self):

@@ -3,7 +3,7 @@ import asyncio
 
 from typing import List
 from collections import defaultdict
-from models import Chunk, TopkTokenModel, OpenAIModel
+from models import Chunk, OpenAIModel
 from models.storage.base_storage import BaseGraphStorage
 from templates import KG_EXTRACTION_PROMPT
 from tqdm.asyncio import tqdm as tqdm_async
@@ -14,7 +14,7 @@ from .merge import merge_nodes, merge_edges
 
 
 async def extract_kg(
-        llm_client: TopkTokenModel,
+        llm_client: OpenAIModel,
         kg_instance: BaseGraphStorage,
         chunks: List[Chunk],
         language: str =  None,
@@ -23,7 +23,7 @@ async def extract_kg(
     """
 
     :param llm_client: teacher LLM model to extract entities and relationships
-    :param kg_instance: knowledge graph storage instance
+    :param kg_instance
     :param chunks
     :param language
     :param entity_types

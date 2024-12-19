@@ -44,6 +44,7 @@ class GraphRag:
     )
 
     # web search
+    if_web_search: bool = False
     wiki_client: WikiSearch = WikiSearch()
 
     def insert(self, chunks: List[Chunk]):
@@ -95,17 +96,18 @@ class GraphRag:
             logger.warning("No entities or relations extracted")
             return
 
-        logger.info(f"[Wiki Search]...")
-        _add_wiki_data = await search_wikipedia(
-            llm_client= self.llm_client,
-            wiki_search_client=self.wiki_client,
-            knowledge_graph_instance=_add_entities_and_relations
-        )
+        logger.info(f"[Wiki Search] is {'enabled' if self.if_web_search else 'disabled'}")
+        if self.if_web_search:
+            logger.info(f"[Wiki Search]...")
+            _add_wiki_data = await search_wikipedia(
+                llm_client= self.llm_client,
+                wiki_search_client=self.wiki_client,
+                knowledge_graph_instance=_add_entities_and_relations
+            )
+            await self.wiki_storage.upsert(_add_wiki_data)
 
-        # 将文档、块、wiki搜索结果分别存入各自的数据库中
         await self.full_docs_storage.upsert(new_docs)
         await self.text_chunks_storage.upsert(inserting_chunks)
-        await self.wiki_storage.upsert(_add_wiki_data)
 
         await self._insert_done()
 

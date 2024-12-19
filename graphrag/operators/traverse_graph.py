@@ -1,6 +1,6 @@
 from models import OpenAIModel, NetworkXStorage
 from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
-from utils import detect_main_language
+from utils import detect_main_language, compute_content_hash
 
 
 async def _process_nodes_and_edges(
@@ -95,7 +95,7 @@ async def traverse_graph_by_edge(
     :return: question and answer
     """
 
-    results = []
+    results = {}
     edges = list(await graph_storage.get_all_edges())
     while len(edges) > 0:
         # 按照loss从大到小排序
@@ -131,9 +131,9 @@ async def traverse_graph_by_edge(
             )
         )
 
-        results.append({
+        results[compute_content_hash(context)] = {
             "question": question,
             "answer": context
-        })
+        }
 
     return results

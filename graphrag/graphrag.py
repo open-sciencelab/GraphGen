@@ -32,6 +32,10 @@ class GraphRag:
         working_dir, namespace="graph"
     )
 
+    qa_storage: JsonKVStorage = JsonKVStorage(
+        working_dir, namespace="qa"
+    )
+
     # text chunking
     chunk_size: int = 1200
     chunk_overlap_size: int = 100
@@ -132,4 +136,7 @@ class GraphRag:
         loop.run_until_complete(self.async_traverse())
 
     async def async_traverse(self):
-        await traverse_graph_by_edge(self.llm_client, self.graph_storage)
+        results = await traverse_graph_by_edge(self.llm_client, self.graph_storage)
+        await self.qa_storage.upsert(results)
+        await self.qa_storage.index_done_callback()
+

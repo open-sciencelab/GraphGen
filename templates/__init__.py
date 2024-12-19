@@ -3,3 +3,5 @@ from .entity_description_summarization import ENTITY_DESCRIPTION_SUMMARIZATION_P
 from .search_judgement import SEARCH_JUDGEMENT_PROMPT
 from .anti_description_rephrasing import ANTI_DESCRIPTION_REPHRASING_PROMPT
 from .statement_judgement import STATEMENT_JUDGEMENT_PROMPT
+from .answer_rephrasing import ANSWER_REPHRASING_PROMPT
+from .question_generation import QUESTION_GENERATION_PROMPT

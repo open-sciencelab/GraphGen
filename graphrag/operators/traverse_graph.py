@@ -84,7 +84,7 @@ def _get_level_2_edges(
 async def traverse_graph_by_edge(
     llm_client: OpenAIModel,
     graph_storage: NetworkXStorage,
-    top_extra_edges: int = 3
+    top_extra_edges: int = 5
 ) -> dict:
     """
     Traverse the graph

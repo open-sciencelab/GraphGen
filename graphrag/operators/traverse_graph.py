@@ -1,6 +1,6 @@
 from models import OpenAIModel, NetworkXStorage
 from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
-from utils import detect_main_language, compute_content_hash
+from utils import detect_main_language, compute_content_hash, logger
 
 
 async def _process_nodes_and_edges(
@@ -130,6 +130,8 @@ async def traverse_graph_by_edge(
                 answer=context
             )
         )
+
+        logger.info(f"Question: {question} Answer: {context}")
 
         results[compute_content_hash(context)] = {
             "question": question,

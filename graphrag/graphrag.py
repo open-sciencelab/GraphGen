@@ -41,11 +41,12 @@ class GraphRag:
     chunk_overlap_size: int = 100
 
     # llm
-    llm_client: OpenAIModel = OpenAIModel(
+    teacher_llm_client: OpenAIModel = OpenAIModel(
         model_name="gpt-4o-mini",
         api_key=os.getenv("OPENAI_API_KEY"),
         base_url=os.getenv("OPENAI_BASE_URL")
     )
+    # student_llm_client: TopkTokenModel = TopkTokenModel()
 
     # web search
     if_web_search: bool = False
@@ -91,7 +92,7 @@ class GraphRag:
 
         logger.info("[Entity and Relation Extraction]...")
         _add_entities_and_relations = await extract_kg(
-            llm_client=self.llm_client,
+            llm_client=self.teacher_llm_client,
             kg_instance=self.graph_storage,
             chunks=[Chunk(id=k, content=v['content']) for k, v in inserting_chunks.items()],
             language="Chinese"
@@ -104,7 +105,7 @@ class GraphRag:
         if self.if_web_search:
             logger.info(f"[Wiki Search]...")
             _add_wiki_data = await search_wikipedia(
-                llm_client= self.llm_client,
+                llm_client= self.teacher_llm_client,
                 wiki_search_client=self.wiki_client,
                 knowledge_graph_instance=_add_entities_and_relations
             )
@@ -128,7 +129,7 @@ class GraphRag:
         loop.run_until_complete(self.async_judge())
 
     async def async_judge(self):
-        _update_relations = await judge_relations(self.llm_client, self.graph_storage)
+        _update_relations = await judge_relations(self.teacher_llm_client, self.graph_storage)
         await _update_relations.index_done_callback()
 
     def traverse(self):
@@ -136,7 +137,7 @@ class GraphRag:
         loop.run_until_complete(self.async_traverse())
 
     async def async_traverse(self):
-        results = await traverse_graph_by_edge(self.llm_client, self.graph_storage)
+        results = await traverse_graph_by_edge(self.teacher_llm_client, self.graph_storage)
         await self.qa_storage.upsert(results)
         await self.qa_storage.index_done_callback()
 

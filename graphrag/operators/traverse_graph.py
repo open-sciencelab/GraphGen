@@ -101,6 +101,7 @@ async def traverse_graph_by_edge(
             )
         )
 
+        logger.info(f"{len(_process_batch[0])} nodes and {len(_process_batch[1])} edges processed")
         logger.info(f"Question: {question} Answer: {context}")
 
         return {

@@ -18,26 +18,19 @@ async def extract_kg(
         kg_instance: BaseGraphStorage,
         chunks: List[Chunk],
         language: str =  None,
-        entity_types: List[str] = None,
-        example_number: int = 3,
+        entity_types: List[str] = None
 ):
     """
 
-    :param llm_client: LLM model to chat with
+    :param llm_client: teacher LLM model to extract entities and relationships
     :param kg_instance: knowledge graph storage instance
-    :param chunks:
-    :param language: prompt language
-    :param entity_types: entity types to extract
-    :param example_number: number of examples in prompt
+    :param chunks
+    :param language
+    :param entity_types
     :return:
     """
 
-    if example_number and example_number < len(KG_EXTRACTION_PROMPT["EXAMPLES"]):
-        examples = "\n".join(
-            KG_EXTRACTION_PROMPT["EXAMPLES"][: int(example_number)]
-        )
-    else:
-        examples = "\n".join(KG_EXTRACTION_PROMPT["EXAMPLES"])
+    examples = "\n".join(KG_EXTRACTION_PROMPT["EXAMPLES"])
 
     if entity_types:
         KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"]["entity_types"] = ",".join(entity_types)
@@ -49,13 +42,6 @@ async def extract_kg(
     examples = examples.format(**KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"])
 
     async def _process_single_content(chunk: Chunk, example: str, max_loop: int = 3):
-        """
-
-        :param chunk: chunk to process
-        :param example: examples to extract entities
-        :param max_loop: max loop to extract entities
-        :return:
-        """
         chunk_id = chunk.id
         content = chunk.content
         hint_prompt = KG_EXTRACTION_PROMPT["TEMPLATE"].format(

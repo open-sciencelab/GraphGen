@@ -1,41 +1,9 @@
+import asyncio
 from models import OpenAIModel, NetworkXStorage
 from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
 from utils import detect_main_language, compute_content_hash, logger
+from tqdm.asyncio import tqdm as tqdm_async
 
-
-async def _process_nodes_and_edges(
-        nodes: list,
-        edges: list,
-        llm_client: OpenAIModel
-) -> str:
-    """
-    Process a single link
-
-    :param nodes: nodes
-    :param edges: edges
-    :param llm_client: llm client
-    :return: context str
-    """
-
-    entities = [
-        f"{node['node_id']}: {node['description']}" for node in nodes
-    ]
-    relations = [
-        f"{edge[0]} -> {edge[1]}: {edge[2]['description']}" for edge in edges
-    ]
-
-    entities_str = "\n".join([f"{i+1}. {entity}" for i, entity in enumerate(entities)])
-    relations_str = "\n".join([f"{i+1}. {relation}" for i, relation in enumerate(relations)])
-
-    prompt = ANSWER_REPHRASING_PROMPT['TEMPLATE'].format(
-        language = "Chinese" if detect_main_language(entities_str + relations_str) == "zh" else "English",
-        entities=entities_str,
-        relationships=relations_str
-    )
-
-    context = await llm_client.generate_answer(prompt)
-
-    return context
 
 async def _get_node_info(
     node_id: str,
@@ -95,8 +63,58 @@ async def traverse_graph_by_edge(
     :return: question and answer
     """
 
+    async def _process_nodes_and_edges(
+            _process_nodes: list,
+            _process_edges: list,
+    ) -> str:
+        entities = [
+            f"{_process_node['node_id']}: {_process_node['description']}" for _process_node in _process_nodes
+        ]
+        relations = [
+            f"{_process_edge[0]} -> {_process_edge[1]}: {_process_edge[2]['description']}" for _process_edge in _process_edges
+        ]
+
+        entities_str = "\n".join([f"{i + 1}. {entity}" for i, entity in enumerate(entities)])
+        relations_str = "\n".join([f"{i + 1}. {relation}" for i, relation in enumerate(relations)])
+
+        prompt = ANSWER_REPHRASING_PROMPT['TEMPLATE'].format(
+            language="Chinese" if detect_main_language(entities_str + relations_str) == "zh" else "English",
+            entities=entities_str,
+            relationships=relations_str
+        )
+
+        context = await llm_client.generate_answer(prompt)
+
+        return context
+
+    async def _process_single_batch(
+        _process_batch: tuple
+    ) -> dict:
+        context = await _process_nodes_and_edges(
+            _process_batch[0],
+            _process_batch[1],
+        )
+
+        question = await llm_client.generate_answer(
+            QUESTION_GENERATION_PROMPT['TEMPLATE'].format(
+                answer=context
+            )
+        )
+
+        logger.info(f"Question: {question} Answer: {context}")
+
+        return {
+            compute_content_hash(context): {
+                "question": question,
+                "answer": context
+            }
+        }
+
     results = {}
     edges = list(await graph_storage.get_all_edges())
+    nodes = await graph_storage.get_all_nodes()
+
+    processing_batches = []
     while len(edges) > 0:
         # 按照loss从大到小排序
         edges = sorted(edges, key=lambda x: x[2]["loss"], reverse=True)
@@ -119,23 +137,21 @@ async def traverse_graph_by_edge(
             _process_nodes.append(await _get_node_info(edge[1], graph_storage))
             _process_edges.append(edge)
 
-        context = await _process_nodes_and_edges(
-            _process_nodes,
-            _process_edges,
-            llm_client
-        )
+        processing_batches.append((_process_nodes, _process_edges))
 
-        question = await llm_client.generate_answer(
-            QUESTION_GENERATION_PROMPT['TEMPLATE'].format(
-                answer=context
-            )
-        )
+    # isolate nodes
+    visited_nodes = set()
+    for _process_nodes, _process_edges in processing_batches:
+        for node in _process_nodes:
+            visited_nodes.add(node["node_id"])
+    for node in nodes:
+        if node[0] not in visited_nodes:
+            _process_nodes = [await _get_node_info(node[0], graph_storage)]
+            processing_batches.append((_process_nodes, []))
 
-        logger.info(f"Question: {question} Answer: {context}")
-
-        results[compute_content_hash(context)] = {
-            "question": question,
-            "answer": context
-        }
+    for result in tqdm_async(asyncio.as_completed(
+        [_process_single_batch(batch) for batch in processing_batches]
+    ), total=len(processing_batches), desc="Processing batches"):
+        results.update(await result)
 
     return results

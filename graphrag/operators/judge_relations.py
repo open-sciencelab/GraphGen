@@ -1,7 +1,10 @@
+import asyncio
 from models import NetworkXStorage
 from utils import logger, yes_no_loss
 from templates import ANTI_DESCRIPTION_REPHRASING_PROMPT, STATEMENT_JUDGEMENT_PROMPT
 from models import OpenAIModel
+from tqdm.asyncio import tqdm as tqdm_async
+
 
 async def judge_relations(llm_client: OpenAIModel, graph_storage: NetworkXStorage) -> NetworkXStorage:
     """
@@ -12,8 +15,9 @@ async def judge_relations(llm_client: OpenAIModel, graph_storage: NetworkXStorag
     :return:
     """
 
-    edges = await graph_storage.get_all_edges()
-    for edge in edges:
+    async def _judge_single_relation(
+        edge: tuple,
+    ):
         source_id = edge[0]
         target_id = edge[1]
         edge_data = edge[2]
@@ -39,7 +43,18 @@ async def judge_relations(llm_client: OpenAIModel, graph_storage: NetworkXStorag
 
         # 将loss加入到边的属性中
         edge_data["loss"] = loss
+
+        return source_id, target_id, edge_data
         await graph_storage.update_edge(source_id, target_id, edge_data)
 
-    return graph_storage
+    edges = await graph_storage.get_all_edges()
 
+    results = []
+    for result in tqdm_async(
+            asyncio.as_completed([_judge_single_relation(edge) for edge in edges]),
+            total=len(edges),
+            desc="Judging relations"
+    ):
+        results.append(await result)
+
+    return graph_storage

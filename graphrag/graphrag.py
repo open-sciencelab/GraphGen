@@ -134,4 +134,3 @@ class GraphRag:
         results = await traverse_graph_by_edge(self.teacher_llm_client, self.graph_storage)
         await self.qa_storage.upsert(results)
         await self.qa_storage.index_done_callback()
-

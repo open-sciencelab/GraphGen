@@ -59,15 +59,13 @@ async def search_wikipedia(llm_client: OpenAIModel,
     nodes = list(nodes)
     wiki_data = {}
 
-    batch_size = 10
+    tasks = [
+        _process_single_entity(node[0].strip('"'), node[1]["description"], llm_client, wiki_search_client)
+        for node in nodes
+    ]
 
-    for i in range(0, len(nodes), batch_size):
-        batch_nodes = nodes[i:i + batch_size]
-        tasks = [
-            _process_single_entity(node[0].strip('"'), node[1]["description"], llm_client, wiki_search_client)
-            for node in batch_nodes
-        ]
-        results = await asyncio.gather(*tasks)
-        wiki_data.update({k: v for k, v in results if v is not None})
+    for task in asyncio.as_completed(tasks):
+        result = await task
+        wiki_data[result[0]] = result[1]
 
     return wiki_data

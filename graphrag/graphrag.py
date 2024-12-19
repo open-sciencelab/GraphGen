@@ -85,9 +85,9 @@ class GraphRag:
         logger.info(f"[New Chunks] inserting {len(inserting_chunks)} chunks")
 
         logger.info("[Entity and Relation Extraction]...")
-        _add_entities_and_relations = await extract_entities_and_relations(
+        _add_entities_and_relations = await extract_kg(
             llm_client=self.llm_client,
-            knowledge_graph_instance=self.graph_storage,
+            kg_instance=self.graph_storage,
             chunks=[Chunk(id=k, content=v['content']) for k, v in inserting_chunks.items()],
             language="Chinese"
         )

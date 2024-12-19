@@ -114,10 +114,10 @@ Output:
 CONTINUE = """MANY entities and relationships were missed in the last extraction.  Add them below using the same format:
 """
 
-IF_LOOP = """Judge if there are some entities and relationships still been missed.  Answer YES | NO if there are still entities and relationships that need to be added.
+IF_LOOP = """It appears some entities and relationships may have still been missed.  Answer YES | NO if there are still entities and relationships that need to be added.
 """
 
-ENTITY_EXTRACTION_PROMPT = {
+KG_EXTRACTION_PROMPT = {
     "TEMPLATE": TEMPLATE,
     "EXAMPLES": EXAMPLES,
     "EXAMPLES_FORMAT": {

@@ -52,6 +52,7 @@ class GraphRag:
 
     async def async_insert(self, chunks: List[Chunk]):
         """
+
         insert chunks into the graph
         """
 

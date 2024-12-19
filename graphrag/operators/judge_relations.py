@@ -44,8 +44,8 @@ async def judge_relations(llm_client: OpenAIModel, graph_storage: NetworkXStorag
         # 将loss加入到边的属性中
         edge_data["loss"] = loss
 
-        return source_id, target_id, edge_data
         await graph_storage.update_edge(source_id, target_id, edge_data)
+        return source_id, target_id, edge_data
 
     edges = await graph_storage.get_all_edges()
 

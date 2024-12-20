@@ -19,7 +19,7 @@ def openai_top_response_tokens(response: Dict) -> List[Token]:
 
 @dataclass
 class OpenAIModel(TopkTokenModel):
-    model_name: str = "gpt-3.5-turbo"
+    model_name: str = "gpt-4o-mini"
     api_key: str = None
     base_url: str = None
 

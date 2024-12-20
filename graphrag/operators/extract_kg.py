@@ -3,9 +3,6 @@ import asyncio
 
 from typing import List
 from collections import defaultdict
-
-from numpy.random import random
-
 from models import Chunk, OpenAIModel
 from models.storage.base_storage import BaseGraphStorage
 from templates import KG_EXTRACTION_PROMPT

@@ -6,7 +6,7 @@ from models.storage.base_storage import BaseGraphStorage
 from templates import ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT
 from utils.log import logger
 
-async def _handle_entity_relation_summary(
+async def _handle_kg_summary(
     entity_or_relation_name: str,
     description: str,
     llm_client: TopkTokenModel,
@@ -29,7 +29,7 @@ async def _handle_entity_relation_summary(
         description_list=use_description.split('<SEP>'),
         **ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT["EXAMPLES_FORMAT"]
     )
-    new_description = llm_client.generate_answer(prompt)
+    new_description = await llm_client.generate_answer(prompt)
     logger.info(f"Entity or relation {entity_or_relation_name} summary: {new_description}")
     return new_description
 
@@ -73,7 +73,7 @@ async def merge_nodes(
     description = '<SEP>'.join(
         sorted(set([dp["description"] for dp in nodes_data] + descriptions))
     )
-    description = await _handle_entity_relation_summary(
+    description = await _handle_kg_summary(
         entity_name, description, llm_client
     )
 
@@ -139,7 +139,7 @@ async def merge_edges(
                 }
             )
 
-    description = await _handle_entity_relation_summary(
+    description = await _handle_kg_summary(
         f"({src_id}, {tgt_id})", description, llm_client
     )
 

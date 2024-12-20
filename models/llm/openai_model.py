@@ -1,8 +1,14 @@
 import math
 from dataclasses import dataclass
 from typing import List, Dict, Optional
-from openai import AsyncOpenAI
+from openai import AsyncOpenAI, RateLimitError, APIConnectionError, Timeout
 from models import TopkTokenModel, Token
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_exponential,
+    retry_if_exception_type,
+)
 
 def openai_top_response_tokens(response: Dict) -> List[Token]:
     token_logprobs = response.choices[0].logprobs.content
@@ -53,6 +59,11 @@ class OpenAIModel(TopkTokenModel):
         kwargs['messages']= messages
         return kwargs
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type((RateLimitError, APIConnectionError, Timeout)),
+    )
     async def generate_topk_per_token(self, text: str, history: Optional[List[str]] = None) -> List[Token]:
         kwargs = self._pre_generate(text, history)
         if self.topk_per_token > 0:
@@ -68,6 +79,11 @@ class OpenAIModel(TopkTokenModel):
 
         return tokens
 
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=4, max=10),
+        retry=retry_if_exception_type((RateLimitError, APIConnectionError, Timeout)),
+    )
     async def generate_answer(self, text: str, history: Optional[List[str]] = None) -> str:
         kwargs = self._pre_generate(text, history)
 

@@ -124,7 +124,7 @@ class GraphRag:
         loop.run_until_complete(self.async_judge())
 
     async def async_judge(self):
-        _update_relations = await judge_relations(self.student_llm_client, self.graph_storage)
+        _update_relations = await judge_relations(self.teacher_llm_client, self.student_llm_client, self.graph_storage)
         await _update_relations.index_done_callback()
 
     def traverse(self):

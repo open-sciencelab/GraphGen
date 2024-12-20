@@ -25,24 +25,23 @@ def get_tokenizer(tokenizer_name: str = "cl100k_base"):
     else:
         raise ValueError("Hugging Face Transformers is not available, please install it first.")
 
-def encode_string(text: str, model_name: str = "cl100k_base") -> List[str]:
+model_name = "cl100k_base"
+tokenizer = get_tokenizer(model_name)
+
+def encode_string(text: str) -> List[str]:
     """
     Encode text to tokens
 
     :param text: text
-    :param model_name: model name
     :return: tokens
     """
-    tokenizer = get_tokenizer(model_name)
     return tokenizer.encode(text)
 
-def decode_tokens(tokens: List[str], model_name: str = "cl100k_base") -> str:
+def decode_tokens(tokens: List[str]) -> str:
     """
     Decode tokens to text
 
     :param tokens: tokens
-    :param model_name: model name
     :return: text
     """
-    tokenizer = get_tokenizer(model_name)
     return tokenizer.decode(tokens)

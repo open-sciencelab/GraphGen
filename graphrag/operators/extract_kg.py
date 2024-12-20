@@ -19,7 +19,8 @@ async def extract_kg(
         kg_instance: BaseGraphStorage,
         chunks: List[Chunk],
         language: str =  None,
-        entity_types: List[str] = None
+        entity_types: List[str] = None,
+        max_concurrent: int = 1000
 ):
     """
 
@@ -28,8 +29,11 @@ async def extract_kg(
     :param chunks
     :param language
     :param entity_types
+    :param max_concurrent
     :return:
     """
+
+    semaphore = asyncio.Semaphore(max_concurrent)
 
     examples = "\n".join(KG_EXTRACTION_PROMPT["EXAMPLES"])
 
@@ -43,58 +47,59 @@ async def extract_kg(
     examples = examples.format(**KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"])
 
     async def _process_single_content(chunk: Chunk, example: str, max_loop: int = 3):
-        chunk_id = chunk.id
-        content = chunk.content
-        hint_prompt = KG_EXTRACTION_PROMPT["TEMPLATE"].format(
-            **KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"], examples=example, input_text=content
-        )
-
-        final_result = await llm_client.generate_answer(hint_prompt)
-        logger.info('First result: %s', final_result)
-
-        history = pack_history_conversations(hint_prompt, final_result)
-        for loop_index in range(max_loop):
-            # 是否结束循环
-            if_loop_result = await llm_client.generate_answer(text=KG_EXTRACTION_PROMPT["IF_LOOP"], history=history)
-            if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
-            if if_loop_result != "yes":
-                break
-
-            glean_result = await llm_client.generate_answer(text=KG_EXTRACTION_PROMPT["CONTINUE"], history=history)
-            logger.info(f"Loop {loop_index} glean: {glean_result}")
-
-            history += pack_history_conversations(KG_EXTRACTION_PROMPT["CONTINUE"], glean_result)
-            final_result += glean_result
-            if loop_index == max_loop - 1:
-                break
-
-        records = split_string_by_multi_markers(
-            final_result,
-            [
-            KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"]["record_delimiter"],
-            KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"]["completion_delimiter"]],
-        )
-
-        nodes = defaultdict(list)
-        edges = defaultdict(list)
-
-        for record in records:
-            record = re.search(r"\((.*)\)", record)
-            if record is None:
-                continue
-            record = record.group(1) # 提取括号内的内容
-            record_attributes = split_string_by_multi_markers(
-                record, [KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"]["tuple_delimiter"]]
+        async with semaphore:
+            chunk_id = chunk.id
+            content = chunk.content
+            hint_prompt = KG_EXTRACTION_PROMPT["TEMPLATE"].format(
+                **KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"], examples=example, input_text=content
             )
 
-            entity = await handle_single_entity_extraction(record_attributes, chunk_id)
-            if entity is not None:
-                nodes[entity["entity_name"]].append(entity)
-                continue
-            relation = await handle_single_relationship_extraction(record_attributes, chunk_id)
-            if relation is not None:
-                edges[(relation["src_id"], relation["tgt_id"])].append(relation)
-        return dict(nodes), dict(edges)
+            final_result = await llm_client.generate_answer(hint_prompt)
+            logger.info('First result: %s', final_result)
+
+            history = pack_history_conversations(hint_prompt, final_result)
+            for loop_index in range(max_loop):
+                # 是否结束循环
+                if_loop_result = await llm_client.generate_answer(text=KG_EXTRACTION_PROMPT["IF_LOOP"], history=history)
+                if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
+                if if_loop_result != "yes":
+                    break
+
+                glean_result = await llm_client.generate_answer(text=KG_EXTRACTION_PROMPT["CONTINUE"], history=history)
+                logger.info(f"Loop {loop_index} glean: {glean_result}")
+
+                history += pack_history_conversations(KG_EXTRACTION_PROMPT["CONTINUE"], glean_result)
+                final_result += glean_result
+                if loop_index == max_loop - 1:
+                    break
+
+            records = split_string_by_multi_markers(
+                final_result,
+                [
+                KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"]["record_delimiter"],
+                KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"]["completion_delimiter"]],
+            )
+
+            nodes = defaultdict(list)
+            edges = defaultdict(list)
+
+            for record in records:
+                record = re.search(r"\((.*)\)", record)
+                if record is None:
+                    continue
+                record = record.group(1) # 提取括号内的内容
+                record_attributes = split_string_by_multi_markers(
+                    record, [KG_EXTRACTION_PROMPT["EXAMPLES_FORMAT"]["tuple_delimiter"]]
+                )
+
+                entity = await handle_single_entity_extraction(record_attributes, chunk_id)
+                if entity is not None:
+                    nodes[entity["entity_name"]].append(entity)
+                    continue
+                relation = await handle_single_relationship_extraction(record_attributes, chunk_id)
+                if relation is not None:
+                    edges[(relation["src_id"], relation["tgt_id"])].append(relation)
+            return dict(nodes), dict(edges)
 
     results = []
     for result in tqdm_async(

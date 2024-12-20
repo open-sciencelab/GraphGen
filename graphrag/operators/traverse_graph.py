@@ -41,7 +41,7 @@ def _get_level_2_edges(
         if edge[0] == node_id:
             level_2_edges.append(edge)
             edges.remove(edge)
-        if edge[1] == node_id:
+        elif edge[1] == node_id:
             level_2_edges.append((edge[1], edge[0], edge[2]))
             edges.remove(edge)
         if len(level_2_edges) >= top_extra_edges:
@@ -52,7 +52,8 @@ def _get_level_2_edges(
 async def traverse_graph_by_edge(
     llm_client: OpenAIModel,
     graph_storage: NetworkXStorage,
-    top_extra_edges: int = 5
+    top_extra_edges: int = 5,
+    max_concurrent: int = 1000
 ) -> dict:
     """
     Traverse the graph
@@ -60,8 +61,11 @@ async def traverse_graph_by_edge(
     :param llm_client: llm client
     :param graph_storage: graph storage instance
     :param top_extra_edges: top extra edges
+    :param max_concurrent: max concurrent
     :return: question and answer
     """
+
+    semaphore = asyncio.Semaphore(max_concurrent)
 
     async def _process_nodes_and_edges(
             _process_nodes: list,
@@ -90,26 +94,27 @@ async def traverse_graph_by_edge(
     async def _process_single_batch(
         _process_batch: tuple
     ) -> dict:
-        context = await _process_nodes_and_edges(
-            _process_batch[0],
-            _process_batch[1],
-        )
-
-        question = await llm_client.generate_answer(
-            QUESTION_GENERATION_PROMPT['TEMPLATE'].format(
-                answer=context
+        async with semaphore:
+            context = await _process_nodes_and_edges(
+                _process_batch[0],
+                _process_batch[1],
             )
-        )
 
-        logger.info(f"{len(_process_batch[0])} nodes and {len(_process_batch[1])} edges processed")
-        logger.info(f"Question: {question} Answer: {context}")
+            question = await llm_client.generate_answer(
+                QUESTION_GENERATION_PROMPT['TEMPLATE'].format(
+                    answer=context
+                )
+            )
 
-        return {
-            compute_content_hash(context): {
-                "question": question,
-                "answer": context
+            logger.info(f"{len(_process_batch[0])} nodes and {len(_process_batch[1])} edges processed")
+            logger.info(f"Question: {question} Answer: {context}")
+
+            return {
+                compute_content_hash(context): {
+                    "question": question,
+                    "answer": context
+                }
             }
-        }
 
     results = {}
     edges = list(await graph_storage.get_all_edges())

@@ -41,6 +41,7 @@ class OpenAIModel(TopkTokenModel):
         kwargs = {
             "temperature": self.temperature,
             "top_p": self.topp,
+            "max_tokens": self.max_tokens,
         }
         if self.seed:
             kwargs["seed"] = self.seed

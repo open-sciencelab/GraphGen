@@ -9,47 +9,52 @@ from tqdm.asyncio import tqdm as tqdm_async
 async def judge_relations(
         teacher_llm_client: OpenAIModel,
         student_llm_client: OpenAIModel,
-        graph_storage: NetworkXStorage) -> NetworkXStorage:
+        graph_storage: NetworkXStorage,
+        max_concurrent: int = 1000) -> NetworkXStorage:
     """
     Get all edges and judge them
 
     :param teacher_llm_client: generate statements
     :param student_llm_client: judge the statements to get comprehension loss
     :param graph_storage: graph storage instance
+    :param max_concurrent: max concurrent
     :return:
     """
+
+    semaphore = asyncio.Semaphore(max_concurrent)
 
     async def _judge_single_relation(
         edge: tuple,
     ):
-        source_id = edge[0]
-        target_id = edge[1]
-        edge_data = edge[2]
-        description = edge_data["description"]
+        async with semaphore:
+            source_id = edge[0]
+            target_id = edge[1]
+            edge_data = edge[2]
+            description = edge_data["description"]
 
-        anti_description = await teacher_llm_client.generate_answer(
-            ANTI_DESCRIPTION_REPHRASING_PROMPT['TEMPLATE'].format(input_sentence=description)
-        )
+            anti_description = await teacher_llm_client.generate_answer(
+                ANTI_DESCRIPTION_REPHRASING_PROMPT['TEMPLATE'].format(input_sentence=description)
+            )
 
-        judgement = await student_llm_client.generate_topk_per_token(
-            STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=description)
-        )
-        anti_judgement = await student_llm_client.generate_topk_per_token(
-            STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=anti_description)
-        )
+            judgement = await student_llm_client.generate_topk_per_token(
+                STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=description)
+            )
+            anti_judgement = await student_llm_client.generate_topk_per_token(
+                STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=anti_description)
+            )
 
-        loss = yes_no_loss(
-            [judgement[0].top_candidates, anti_judgement[0].top_candidates],
-            ['yes', 'no']
-        )
+            loss = yes_no_loss(
+                [judgement[0].top_candidates, anti_judgement[0].top_candidates],
+                ['yes', 'no']
+            )
 
-        logger.info(f"Edge {source_id} -> {target_id} description: {description} loss: {loss}")
+            logger.info(f"Edge {source_id} -> {target_id} description: {description} loss: {loss}")
 
-        # 将loss加入到边的属性中
-        edge_data["loss"] = loss
+            # 将loss加入到边的属性中
+            edge_data["loss"] = loss
 
-        await graph_storage.update_edge(source_id, target_id, edge_data)
-        return source_id, target_id, edge_data
+            await graph_storage.update_edge(source_id, target_id, edge_data)
+            return source_id, target_id, edge_data
 
     edges = await graph_storage.get_all_edges()
 

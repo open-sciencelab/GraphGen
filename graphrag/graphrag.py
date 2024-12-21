@@ -3,11 +3,11 @@ import asyncio
 from tqdm.asyncio import tqdm as tqdm_async
 
 from .operators import *
-from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch
+from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch, Tokenizer
 from typing import List, cast
 
 from dataclasses import dataclass
-from utils import create_event_loop, logger, set_logger, compute_content_hash, chunk_by_token_size
+from utils import create_event_loop, logger, set_logger, compute_content_hash
 from models.storage.base_storage import StorageNameSpace
 
 
@@ -41,6 +41,7 @@ class GraphRag:
     # llm
     teacher_llm_client: OpenAIModel = None
     student_llm_client: OpenAIModel = None
+    tokenizer_instance: Tokenizer = Tokenizer()
 
     # web search
     if_web_search: bool = False
@@ -75,7 +76,7 @@ class GraphRag:
                 compute_content_hash(dp["content"], prefix="chunk-"): {
                     **dp,
                     'full_doc_id': doc_key
-                } for dp in chunk_by_token_size(doc["content"], self.chunk_overlap_size, self.chunk_size)
+                } for dp in self.tokenizer_instance.chunk_by_token_size(doc["content"], self.chunk_overlap_size, self.chunk_size)
             }
             inserting_chunks.update(chunks)
         _add_chunk_keys = await self.text_chunks_storage.filter_keys(list(inserting_chunks.keys()))
@@ -89,6 +90,7 @@ class GraphRag:
         _add_entities_and_relations = await extract_kg(
             llm_client=self.teacher_llm_client,
             kg_instance=self.graph_storage,
+            tokenizer_instance=self.tokenizer_instance,
             chunks=[Chunk(id=k, content=v['content']) for k, v in inserting_chunks.items()],
             language="Chinese"
         )

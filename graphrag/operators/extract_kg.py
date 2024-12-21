@@ -3,7 +3,7 @@ import asyncio
 
 from typing import List
 from collections import defaultdict
-from models import Chunk, OpenAIModel
+from models import Chunk, OpenAIModel, Tokenizer
 from models.storage.base_storage import BaseGraphStorage
 from templates import KG_EXTRACTION_PROMPT
 from tqdm.asyncio import tqdm as tqdm_async
@@ -17,6 +17,7 @@ from .merge import merge_nodes, merge_edges
 async def extract_kg(
         llm_client: OpenAIModel,
         kg_instance: BaseGraphStorage,
+        tokenizer_instance: Tokenizer,
         chunks: List[Chunk],
         language: str =  None,
         entity_types: List[str] = None,
@@ -26,6 +27,7 @@ async def extract_kg(
 
     :param llm_client: teacher LLM model to extract entities and relationships
     :param kg_instance
+    :param tokenizer_instance
     :param chunks
     :param language
     :param entity_types
@@ -122,7 +124,7 @@ async def extract_kg(
     entities_data = []
     for result in tqdm_async(
         asyncio.as_completed(
-            [merge_nodes(k, v, kg_instance, llm_client) for k, v in nodes.items()]
+            [merge_nodes(k, v, kg_instance, llm_client, tokenizer_instance) for k, v in nodes.items()]
         ),
         total=len(nodes),
         desc="Inserting entities into storage",
@@ -135,7 +137,7 @@ async def extract_kg(
 
     for result in tqdm_async(
         asyncio.as_completed(
-            [merge_edges(src_id, tgt_id, v, kg_instance, llm_client) for
+            [merge_edges(src_id, tgt_id, v, kg_instance, llm_client, tokenizer_instance) for
              (src_id, tgt_id), v in edges.items()]
         ),
         total=len(edges),

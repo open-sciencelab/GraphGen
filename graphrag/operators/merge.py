@@ -1,7 +1,6 @@
 from collections import Counter
 from utils.format import split_string_by_multi_markers
-from utils.encode import encode_string, decode_tokens
-from models import TopkTokenModel
+from models import TopkTokenModel, Tokenizer
 from models.storage.base_storage import BaseGraphStorage
 from templates import ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT
 from utils.log import logger
@@ -10,20 +9,24 @@ async def _handle_kg_summary(
     entity_or_relation_name: str,
     description: str,
     llm_client: TopkTokenModel,
-    max_summary_tokens: int = 100,
+    tokenizer_instance: Tokenizer,
+    max_summary_tokens: int = 200
 ) -> str:
     """
     处理实体或关系的描述信息
 
-    :param entity_or_relation_name: entity or relation name
-    :param description: description
+    :param entity_or_relation_name
+    :param description
+    :param llm_client
+    :param tokenizer_instance
+    :param max_summary_tokens
     :return: new description
     """
-    tokens = encode_string(description)
+    tokens = tokenizer_instance.encode_string(description)
     if len(tokens) <  max_summary_tokens:
         return description
 
-    use_description = decode_tokens(tokens[:max_summary_tokens])
+    use_description = tokenizer_instance.decode_tokens(tokens[:max_summary_tokens])
     prompt = ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT["TEMPLATE"].format(
         entity_name=entity_or_relation_name,
         description_list=use_description.split('<SEP>'),
@@ -37,23 +40,25 @@ async def _handle_kg_summary(
 async def merge_nodes(
     entity_name: str,
     nodes_data: list[dict],
-    knowledge_graph_instance: BaseGraphStorage,
+    kg_instance: BaseGraphStorage,
     llm_client: TopkTokenModel,
+    tokenizer_instance: Tokenizer,
 ):
     """
     Merge nodes
 
-    :param entity_name: entity name
-    :param nodes_data: nodes data
-    :param knowledge_graph_instance: knowledge graph instance
-    :param llm_client: LLM model to chat with
+    :param entity_name
+    :param nodes_data
+    :param kg_instance
+    :param llm_client
+    :param tokenizer_instance
     :return: None
     """
     entity_types = []
     source_ids = []
     descriptions = []
 
-    node = await knowledge_graph_instance.get_node(entity_name)
+    node = await kg_instance.get_node(entity_name)
     if node is not None:
         entity_types.append(node["entity_type"])
         source_ids.extend(
@@ -74,7 +79,7 @@ async def merge_nodes(
         sorted(set([dp["description"] for dp in nodes_data] + descriptions))
     )
     description = await _handle_kg_summary(
-        entity_name, description, llm_client
+        entity_name, description, llm_client, tokenizer_instance
     )
 
     source_id = '<SEP>'.join(
@@ -86,7 +91,7 @@ async def merge_nodes(
         description=description,
         source_id=source_id
     )
-    await knowledge_graph_instance.upsert_node(
+    await kg_instance.upsert_node(
         entity_name,
         node_data=node_data
     )
@@ -99,15 +104,17 @@ async def merge_edges(
     edges_data: list[dict],
     knowledge_graph_instance: BaseGraphStorage,
     llm_client: TopkTokenModel,
+    tokenizer_instance: Tokenizer,
 ):
     """
     Merge edges
 
-    :param src_id: source id
-    :param tgt_id: target id
-    :param edges_data: edges data
-    :param knowledge_graph_instance: knowledge graph instance
-    :param llm_client: LLM model to chat with
+    :param src_id
+    :param tgt_id
+    :param edges_data
+    :param knowledge_graph_instance
+    :param llm_client
+    :param tokenizer_instance
     :return: None
     """
 
@@ -140,7 +147,7 @@ async def merge_edges(
             )
 
     description = await _handle_kg_summary(
-        f"({src_id}, {tgt_id})", description, llm_client
+        f"({src_id}, {tgt_id})", description, llm_client, tokenizer_instance
     )
 
     await knowledge_graph_instance.upsert_edge(

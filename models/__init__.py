@@ -9,6 +9,9 @@ from .storage.json_storage import JsonKVStorage
 
 from .search.wiki_search import WikiSearch
 
+from .evaluate.length_evaluator import LengthEvaluator
+
+
 __all__ = [
     # llm models
     "OpenAIModel",
@@ -21,4 +24,6 @@ __all__ = [
     "JsonKVStorage",
     # search models
     "WikiSearch",
+    # evaluate models
+    "LengthEvaluator",
 ]

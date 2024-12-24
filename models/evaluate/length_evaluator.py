@@ -1,16 +1,16 @@
 from dataclasses import dataclass
-from base_evaluator import BaseEvaluator
-from utils import detect_main_language, NLTKHelper
+from .base_evaluator import BaseEvaluator
+from models.llm.tokenizer import Tokenizer
 
-nltk_helper = NLTKHelper()
+
 
 @dataclass
 class LengthEvaluator(BaseEvaluator):
-    """
-    衡量文本长度的指标
-    """
-    def evaluate(self, text: str) -> float:
-        lang = "chinese" if detect_main_language(text) == "zh" else "english"
-        tokens = nltk_helper.word_tokenize(text, lang)
+    tokenizer_name: str = "cl100k_base"
+    def __post_init__(self):
+        self.tokenizer = Tokenizer(
+            model_name=self.tokenizer_name
+        )
 
-        return len(tokens)
+    async def evaluate_single(self, text: str) -> float:
+        return len(self.tokenizer.encode_string(text))

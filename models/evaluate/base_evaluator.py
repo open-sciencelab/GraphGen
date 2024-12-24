@@ -1,17 +1,31 @@
-from dataclasses import dataclass
+import asyncio
 
-# Helpfulness、Honesty、Harmlessness
+from dataclasses import dataclass
+from utils import create_event_loop
+from tqdm.asyncio import tqdm as tqdm_async
+
 @dataclass
 class BaseEvaluator:
-    def evaluate(self, text: str) -> float:
+    def evaluate(self, texts: list[str]) -> float:
         """
         Evaluate the text and return a score.
         """
-        raise NotImplementedError
+        return create_event_loop().run_until_complete(self.async_evaluate(texts))
 
+    async def async_evaluate(self, texts: list[str]) -> float:
+        results = []
+        for result in tqdm_async(
+            asyncio.as_completed([self.evaluate_single(text) for text in texts]),
+            total=len(texts),
+        ):
+            results.append(await result)
+        return results
 
+    async def evaluate_single(self, text: str) -> float:
+        raise NotImplementedError()
 
-# 指令跟随难度（Instruction-Following Difficulty，IFD）是一个用于筛选具有增强LLM指令调优潜力的数据样例的指标
-# 评估SFT数据质量的一些指标包括Length、Rewardscore、Perplexity、MTLD、KNN-i、Unieval-naturalness、Unieval-coherence、Unieval-understandability等
-# https://github.com/maszhongming/UniEval
-# 1. 使用打分模型对数据进行打分
+    def get_average_score(self, texts: list[str]) -> float:
+        """
+        Get the average score of a batch of texts.
+        """
+        return sum(self.evaluate(texts)) / len(texts)

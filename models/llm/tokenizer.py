@@ -29,7 +29,9 @@ def get_tokenizer(tokenizer_name: str = "cl100k_base"):
 @dataclass
 class Tokenizer:
     model_name: str = "cl100k_base"
-    tokenizer = get_tokenizer(model_name)
+
+    def __post_init__(self):
+        self.tokenizer = get_tokenizer(self.model_name)
 
     def encode_string(self, text: str) -> List[str]:
         """

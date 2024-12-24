@@ -6,7 +6,7 @@ from models.text.text_pair import TextPair
 @dataclass
 class RewardEvaluator:
     # TODO: list the available reward models, like "BAAI/IndustryCorpus2_Datarater"
-    reward_name: str = "OpenAssistant/reward-model-deberta-v3-large"
+    reward_name: str = "OpenAssistant/reward-model-deberta-v3-large-v2"
 
     def __post_init__(self):
         self.rank_model = AutoModelForSequenceClassification.from_pretrained(self.reward_name)

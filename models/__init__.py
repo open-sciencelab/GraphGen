@@ -10,6 +10,7 @@ from .storage.json_storage import JsonKVStorage
 from .search.wiki_search import WikiSearch
 
 from .evaluate.length_evaluator import LengthEvaluator
+from .evaluate.mtld_evaluator import MTLDEvaluator
 
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "WikiSearch",
     # evaluate models
     "LengthEvaluator",
+    "MTLDEvaluator",
 ]

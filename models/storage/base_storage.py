@@ -1,7 +1,7 @@
 import numpy as np
 
 from dataclasses import dataclass
-from models.embedding import EmbeddingFunc
+from models.embed.embedding import EmbeddingFunc
 from typing import Union, Generic, TypeVar
 
 T = TypeVar("T")

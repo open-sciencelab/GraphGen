@@ -10,7 +10,7 @@ from tqdm.asyncio import tqdm as tqdm_async
 from utils import logger
 from utils import (pack_history_conversations, split_string_by_multi_markers,
                    handle_single_entity_extraction, handle_single_relationship_extraction)
-from .merge import merge_nodes, merge_edges
+from .merge_kg import merge_nodes, merge_edges
 
 
 

@@ -1,4 +1,4 @@
-from .chunk import Chunk
+from models.text.chunk import Chunk
 
 from .llm.topk_token_model import Token, TopkTokenModel
 from .llm.openai_model import OpenAIModel

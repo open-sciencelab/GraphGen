@@ -1,6 +1,7 @@
 from dataclasses import  dataclass
 from .base_evaluator import BaseEvaluator
 from utils import detect_main_language, NLTKHelper
+from models.text.text_pair import TextPair
 
 nltk_helper = NLTKHelper()
 
@@ -9,8 +10,8 @@ class MTLDEvaluator(BaseEvaluator):
     """
     衡量文本词汇多样性的指标
     """
-    async def evaluate_single(self, text: str) -> float:
-        return self._calculate_mtld_score(text)
+    async def evaluate_single(self, pair: TextPair) -> float:
+        return self._calculate_mtld_score(pair.answer)
 
     def _calculate_mtld_score(self, text: str, threshold=0.72) -> float:
         """

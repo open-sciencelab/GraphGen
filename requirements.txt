@@ -10,3 +10,4 @@ pyecharts
 wikipedia
 tenacity
 nltk
+jieba

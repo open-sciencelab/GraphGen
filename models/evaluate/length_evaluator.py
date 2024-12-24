@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from .base_evaluator import BaseEvaluator
 from models.llm.tokenizer import Tokenizer
+from models.text.text_pair import TextPair
 
 
 
@@ -12,5 +13,5 @@ class LengthEvaluator(BaseEvaluator):
             model_name=self.tokenizer_name
         )
 
-    async def evaluate_single(self, text: str) -> float:
-        return len(self.tokenizer.encode_string(text))
+    async def evaluate_single(self, pair: TextPair) -> float:
+        return len(self.tokenizer.encode_string(pair.answer))

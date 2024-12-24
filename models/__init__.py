@@ -1,4 +1,5 @@
-from models.text.chunk import Chunk
+from .text.chunk import Chunk
+from .text.text_pair import TextPair
 
 from .llm.topk_token_model import Token, TopkTokenModel
 from .llm.openai_model import OpenAIModel
@@ -26,6 +27,7 @@ __all__ = [
     # search models
     "WikiSearch",
     # evaluate models
+    "TextPair",
     "LengthEvaluator",
     "MTLDEvaluator",
 ]

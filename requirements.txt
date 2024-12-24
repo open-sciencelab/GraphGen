@@ -9,3 +9,4 @@ transformers
 pyecharts
 wikipedia
 tenacity
+nltk

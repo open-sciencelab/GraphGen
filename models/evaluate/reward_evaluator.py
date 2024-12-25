@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from .base_evaluator import BaseEvaluator
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from models.text.text_pair import TextPair
+from utils import logger
 
 
 @dataclass
@@ -13,9 +14,12 @@ class RewardEvaluator(BaseEvaluator):
     def __post_init__(self):
         self.rank_model = AutoModelForSequenceClassification.from_pretrained(self.reward_name)
         self.tokenizer = AutoTokenizer.from_pretrained(self.reward_name)
+        self.rank_model.to("cuda")
+        logger.info(f"Loaded reward model: {self.reward_name}")
 
     async def evaluate_single(self, pair: TextPair) -> float:
         question, answer = pair.question, pair.answer
+
         # concatenate the question and answer
         inputs = self.tokenizer(question, answer, return_tensors="pt")
         score = self.rank_model(**inputs).logits[0].item()

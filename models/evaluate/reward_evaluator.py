@@ -1,10 +1,12 @@
 from dataclasses import dataclass
+from .base_evaluator import BaseEvaluator
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from models.text.text_pair import TextPair
 
 
 @dataclass
-class RewardEvaluator:
+class RewardEvaluator(BaseEvaluator):
+    
     # TODO: list the available reward models, like "BAAI/IndustryCorpus2_Datarater"
     reward_name: str = "OpenAssistant/reward-model-deberta-v3-large-v2"
 

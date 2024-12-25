@@ -11,3 +11,4 @@ wikipedia
 tenacity
 nltk
 jieba
+torch

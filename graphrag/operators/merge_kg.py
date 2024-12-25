@@ -2,8 +2,8 @@ from collections import Counter
 from utils.format import split_string_by_multi_markers
 from models import TopkTokenModel, Tokenizer
 from models.storage.base_storage import BaseGraphStorage
-from templates import ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT
-from utils.log import logger
+from templates import KG_SUMMARIZATION_PROMPT, KG_EXTRACTION_PROMPT
+from utils import logger, detect_main_language
 
 async def _handle_kg_summary(
     entity_or_relation_name: str,
@@ -22,15 +22,22 @@ async def _handle_kg_summary(
     :param max_summary_tokens
     :return: new description
     """
+    language = detect_main_language(description)
+    if language == "en":
+        language = "English"
+    else:
+        language = "Chinese"
+    KG_EXTRACTION_PROMPT["FORMAT"]["language"] = language
+
     tokens = tokenizer_instance.encode_string(description)
     if len(tokens) <  max_summary_tokens:
         return description
 
     use_description = tokenizer_instance.decode_tokens(tokens[:max_summary_tokens])
-    prompt = ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT["TEMPLATE"].format(
+    prompt = KG_SUMMARIZATION_PROMPT[language]["TEMPLATE"].format(
         entity_name=entity_or_relation_name,
         description_list=use_description.split('<SEP>'),
-        **ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT["EXAMPLES_FORMAT"]
+        **KG_SUMMARIZATION_PROMPT["FORMAT"]
     )
     new_description = await llm_client.generate_answer(prompt)
     logger.info(f"Entity or relation {entity_or_relation_name} summary: {new_description}")

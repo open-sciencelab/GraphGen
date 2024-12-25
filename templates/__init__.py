@@ -1,5 +1,5 @@
 from .kg_extraction import KG_EXTRACTION_PROMPT
-from .entity_description_summarization import ENTITY_DESCRIPTION_SUMMARIZATION_PROMPT
+from .kg_summarization import KG_SUMMARIZATION_PROMPT
 from .search_judgement import SEARCH_JUDGEMENT_PROMPT
 from .anti_description_rephrasing import ANTI_DESCRIPTION_REPHRASING_PROMPT
 from .statement_judgement import STATEMENT_JUDGEMENT_PROMPT

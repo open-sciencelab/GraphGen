@@ -91,8 +91,7 @@ class GraphRag:
             llm_client=self.teacher_llm_client,
             kg_instance=self.graph_storage,
             tokenizer_instance=self.tokenizer_instance,
-            chunks=[Chunk(id=k, content=v['content']) for k, v in inserting_chunks.items()],
-            language="Chinese"
+            chunks=[Chunk(id=k, content=v['content']) for k, v in inserting_chunks.items()]
         )
         if not _add_entities_and_relations:
             logger.warning("No entities or relations extracted")

@@ -1,6 +1,6 @@
 def detect_main_language(text):
     """
-    # 识别文本的主要语言
+    识别文本的主要语言
 
     :param text:
     :return:
@@ -26,3 +26,14 @@ def detect_main_language(text):
         return 'zh'
     else:
         return 'en'
+
+def detect_if_chinese(text):
+    """
+    判断文本是否包含有中文
+
+    :param text:
+    :return:
+    """
+
+    assert isinstance(text, str)
+    return any('\u4e00' <= char <= '\u9fff' for char in text)

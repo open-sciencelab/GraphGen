@@ -28,7 +28,7 @@ class NLTKHelper:
 
     @staticmethod
     def word_tokenize(text: str, lang: str) -> List[str]:
-        if lang == "chinese":
+        if lang == "zh":
             return jieba.lcut(text)
         else:
             nltk.data.path.append(os.path.join(resource_path, "nltk_data"))
@@ -37,4 +37,4 @@ class NLTKHelper:
             except LookupError:
                 nltk.download("punkt_tab", download_dir=os.path.join(resource_path, "nltk_data"))
 
-            return nltk.word_tokenize(text, language=lang)
+            return nltk.word_tokenize(text)

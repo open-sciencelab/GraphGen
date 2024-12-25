@@ -1,7 +1,8 @@
-from dataclasses import  dataclass
+from dataclasses import  dataclass, field
 from .base_evaluator import BaseEvaluator
-from utils import detect_main_language, NLTKHelper
+from utils import detect_main_language, NLTKHelper, create_event_loop
 from models.text.text_pair import TextPair
+from typing import Set
 
 nltk_helper = NLTKHelper()
 
@@ -10,8 +11,12 @@ class MTLDEvaluator(BaseEvaluator):
     """
     衡量文本词汇多样性的指标
     """
+    stopwords_en: Set[str] = field(default_factory=lambda: set(nltk_helper.get_stopwords("english")))
+    stopwords_zh: Set[str] = field(default_factory=lambda: set(nltk_helper.get_stopwords("chinese")))
+
     async def evaluate_single(self, pair: TextPair) -> float:
-        return self._calculate_mtld_score(pair.answer)
+        loop = create_event_loop()
+        return await loop.run_in_executor(None, self._calculate_mtld_score, pair.answer)
 
     def _calculate_mtld_score(self, text: str, threshold=0.72) -> float:
         """
@@ -23,10 +28,10 @@ class MTLDEvaluator(BaseEvaluator):
         if not text or not text.strip():
             return 0.0
 
-        lang = "chinese" if detect_main_language(text) == "zh" else "english"
+        lang = detect_main_language(text)
         tokens = nltk_helper.word_tokenize(text, lang)
 
-        stopwords = nltk_helper.get_stopwords(lang)
+        stopwords = self.stopwords_zh if lang == "zh" else self.stopwords_en
         filtered_tokens = [word for word in tokens if word not in stopwords]
         filtered_tokens = [word for word in filtered_tokens if word.isalnum()]
 

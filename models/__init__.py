@@ -13,6 +13,7 @@ from .search.wiki_search import WikiSearch
 from .evaluate.length_evaluator import LengthEvaluator
 from .evaluate.mtld_evaluator import MTLDEvaluator
 from .evaluate.reward_evaluator import RewardEvaluator
+from .evaluate.uni_evaluator import UniEvaluator
 
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "LengthEvaluator",
     "MTLDEvaluator",
     "RewardEvaluator",
+    "UniEvaluator",
 ]

@@ -14,6 +14,8 @@ class RewardEvaluator(BaseEvaluator):
     def __post_init__(self):
         self.rank_model = AutoModelForSequenceClassification.from_pretrained(self.reward_name)
         self.tokenizer = AutoTokenizer.from_pretrained(self.reward_name)
+
+        self.rank_model.eval()
         self.rank_model.to("cuda")
 
         logger.info(f"Loaded reward model: {self.reward_name}")

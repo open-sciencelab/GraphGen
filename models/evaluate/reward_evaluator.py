@@ -7,8 +7,6 @@ from utils import logger, create_event_loop
 
 @dataclass
 class RewardEvaluator(BaseEvaluator):
-    
-    # TODO: list the available reward models, like "BAAI/IndustryCorpus2_Datarater"
     reward_name: str = "OpenAssistant/reward-model-deberta-v3-large-v2"
 
     def __post_init__(self):

@@ -11,27 +11,16 @@ set_logger(os.path.join(sys_path, "cache", "evaluate.log"))
 
 load_dotenv()
 
-length_evaluator = LengthEvaluator(
-    tokenizer_name=os.getenv("EVALUATE_TOKENIZER", "cl100k_base")
-)
-mtld_evaluator = MTLDEvaluator()
-
-reward_evaluator = RewardEvaluator(
-    reward_name=os.getenv("EVALUATE_REWARD", "OpenAssistant/reward-model-deberta-v3-large-v2")
-)
-
-uni_evaluator = UniEvaluator(
-    model_name=os.getenv("EVALUATE_UNI", "MingZhong/unieval-sum")
-)
-
-logger.info("Evaluators loaded")
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--folder', type=str, default='cache/data', help='folder to load data')
     parser.add_argument('--output', type=str, default='cache/output', help='path to save output')
+
+    parser.add_argument('--tokenizer', type=str, default='cl100k_base', help='tokenizer name')
+    parser.add_argument('--reward', type=str, default='OpenAssistant/reward-model-deberta-v3-large-v2', help='Comma-separated list of reward models')
+    parser.add_argument('--uni', type=str, default='MingZhong/unieval-sum', help='uni model name')
 
     args = parser.parse_args()
 
@@ -40,6 +29,30 @@ if __name__ == '__main__':
 
     if not os.path.exists(args.output):
         os.makedirs(args.output)
+
+    reward_models = args.reward.split(',')
+
+    logger.info("Evaluators loading")
+
+    length_evaluator = LengthEvaluator(
+        tokenizer_name=args.tokenizer
+    )
+    mtld_evaluator = MTLDEvaluator()
+
+    reward_evaluators = []
+    for reward_name in reward_models:
+        reward_evaluators.append({
+            'reward_name': reward_name.split('/')[-1],
+            'evaluator': RewardEvaluator(
+                reward_name=reward_name
+            )
+        })
+
+    uni_evaluator = UniEvaluator(
+        model_name=args.uni
+    )
+
+    logger.info("Evaluators loaded")
 
     results = []
 
@@ -59,8 +72,12 @@ if __name__ == '__main__':
             mtld_scores = mtld_evaluator.get_average_score(data)
             logger.info(f"MTLD scores: {mtld_scores}")
 
-            reward_scores = reward_evaluator.get_average_score(data)
-            logger.info(f"Reward scores: {reward_scores}")
+            reward_scores = []
+            for reward_evaluator in reward_evaluators:
+                reward_scores.append({
+                    'reward_name': reward_evaluator['reward_name'],
+                    'score': reward_evaluator['evaluator'].get_average_score(data)
+                })
 
             uni_naturelness_scores = uni_evaluator.get_average_score(data, 'naturalness')
             logger.info(f"Uni naturalness scores: {uni_naturelness_scores}")
@@ -71,16 +88,19 @@ if __name__ == '__main__':
             uni_understandability_scores = uni_evaluator.get_average_score(data, 'understandability')
             logger.info(f"Uni understandability scores: {uni_understandability_scores}")
 
-            results.append({
+            result = {
                 'file': file,
                 'number': len(data),
                 'length': length_scores,
                 'mtld': mtld_scores,
-                'reward': reward_scores,
                 'uni_naturalness': uni_naturelness_scores,
                 'uni_coherence': uni_coherence_scores,
                 'uni_understandability': uni_understandability_scores
-            })
+            }
+            for reward_score in reward_scores:
+                result[reward_score['reward_name']] = reward_score['score']
+
+            results.append(result)
         
     results = pd.DataFrame(results)
         

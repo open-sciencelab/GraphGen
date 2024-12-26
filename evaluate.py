@@ -73,6 +73,7 @@ if __name__ == '__main__':
 
             results.append({
                 'file': file,
+                'number': len(data),
                 'length': length_scores,
                 'mtld': mtld_scores,
                 'reward': reward_scores,

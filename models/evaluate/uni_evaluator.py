@@ -38,7 +38,7 @@ class UniEvaluator(BaseEvaluator):
         semaphore = asyncio.Semaphore(self.max_concurrent)
         
         async def evaluate_with_semaphore(pair):
-            async with semaphore:  # 获取Semaphore
+            async with semaphore:
                 return await self.evaluate_single(pair, dimension)
         
         results = []

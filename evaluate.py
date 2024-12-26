@@ -41,9 +41,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.output):
         os.makedirs(args.output)
 
-    results = pd.DataFrame(
-        columns=['file', 'number', 'length', 'mtld', 'reward', 'uni_naturalness', 'uni_coherence', 'uni_understandability']
-    )
+    results = []
 
     logger.info(f"Data loaded from {args.folder}")
     for file in os.listdir(args.folder):
@@ -73,29 +71,16 @@ if __name__ == '__main__':
             uni_understandability_scores = uni_evaluator.get_average_score(data, 'understandability')
             logger.info(f"Uni understandability scores: {uni_understandability_scores}")
 
-            # results = results.append({
-            #     'file': file,
-            #     'number': len(data),
-            #     'length': length_scores,
-            #     'mtld': mtld_scores,
-            #     'reward': reward_scores,
-            #     'uni_naturalness': uni_naturelness_scores,
-            #     'uni_coherence': uni_coherence_scores,
-            #     'uni_understandability': uni_understandability_scores
-            # }, ignore_index=True)
-
-            results = pd.concat([
-                results,
-                pd.DataFrame({
-                    'file': file,
-                    'number': len(data),
-                    'length': length_scores,
-                    'mtld': mtld_scores,
-                    'reward': reward_scores,
-                    'uni_naturalness': uni_naturelness_scores,
-                    'uni_coherence': uni_coherence_scores,
-                    'uni_understandability': uni_understandability_scores
-                })
-            ])
+            results.append({
+                'file': file,
+                'length': length_scores,
+                'mtld': mtld_scores,
+                'reward': reward_scores,
+                'uni_naturalness': uni_naturelness_scores,
+                'uni_coherence': uni_coherence_scores,
+                'uni_understandability': uni_understandability_scores
+            })
+        
+    results = pd.DataFrame(results)
         
     results.to_csv(os.path.join(args.output, 'evaluation.csv'), index=False)

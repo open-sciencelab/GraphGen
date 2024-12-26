@@ -78,6 +78,7 @@ if __name__ == '__main__':
                     'reward_name': reward_evaluator['reward_name'],
                     'score': reward_evaluator['evaluator'].get_average_score(data)
                 })
+                logger.info(f"{reward_evaluator['reward_name']} scores: {reward_scores[-1]['score']}")
 
             uni_naturelness_scores = uni_evaluator.get_average_score(data, 'naturalness')
             logger.info(f"Uni naturalness scores: {uni_naturelness_scores}")

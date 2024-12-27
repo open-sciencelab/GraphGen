@@ -1,6 +1,7 @@
 import os
 import json
 import argparse
+import torch
 import pandas as pd
 from dotenv import load_dotenv
 from models import LengthEvaluator, MTLDEvaluator, RewardEvaluator, TextPair, UniEvaluator
@@ -61,11 +62,11 @@ if __name__ == '__main__':
         if file.endswith('.json'):
             logger.info(f"Processing {file}")
             data = json.load(open(os.path.join(args.folder, file)))
-
             data = [TextPair(
                 question=data[key]['question'],
                 answer=data[key]['answer']
             ) for key in data]
+
             length_scores = length_evaluator.get_average_score(data)
             logger.info(f"Length scores: {length_scores}")
 
@@ -102,6 +103,11 @@ if __name__ == '__main__':
                 result[reward_score['reward_name']] = reward_score['score']
 
             results.append(result)
+
+            # 清理 GPU 缓存
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+
         
     results = pd.DataFrame(results)
         

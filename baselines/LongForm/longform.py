@@ -26,13 +26,17 @@ class LongForm:
             for chunk in doc:
                 content = chunk['content']
                 prompt = PROMPT_TEMPLATE.format(doc=content)
-                question = await self.llm_client.generate_answer(prompt)
-                results.append({
-                    compute_content_hash(question): {
-                        'question': question,
-                        'answer': content
-                    }
-                })
+                try:
+                    question = await self.llm_client.generate_answer(prompt)
+                    results.append({
+                        compute_content_hash(question): {
+                            'question': question,
+                            'answer': content
+                        }
+                    })
+                except Exception as e:
+                    print(f"Error: {e}")
+                    continue
         return results
 
 if __name__ == "__main__":

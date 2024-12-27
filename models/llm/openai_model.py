@@ -1,7 +1,7 @@
 import math
 from dataclasses import dataclass
 from typing import List, Dict, Optional
-from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
+from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError, ChatCompletion
 from models import TopkTokenModel, Token
 from tenacity import (
     retry,
@@ -10,7 +10,7 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-def openai_top_response_tokens(response: Dict) -> List[Token]:
+def get_top_response_tokens(response: ChatCompletion) -> List[Token]:
     token_logprobs = response.choices[0].logprobs.content
     tokens = []
     for token_prob in token_logprobs:
@@ -76,7 +76,7 @@ class OpenAIModel(TopkTokenModel):
             **kwargs
         )
 
-        tokens = openai_top_response_tokens(completion)
+        tokens = get_top_response_tokens(completion)
 
         return tokens
 

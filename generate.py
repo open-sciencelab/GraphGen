@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from utils import set_logger
 
 sys_path = os.path.abspath(os.path.dirname(__file__))
-set_logger(os.path.join(sys_path, "cache", "logs", "graphrag.log"))
+set_logger(os.path.join(sys_path, "cache", "logs", "graphrag.log"), if_stream=False)
 
 load_dotenv()
 

@@ -53,11 +53,3 @@ Rephrased Text:
 ANSWER_REPHRASING_PROMPT= {
     "TEMPLATE": TEMPLATE
 }
-
-# N种不同的模板，每种模板都有不同的形容词，代表复杂（采样）程度
-# ---Complexity Levels---
-#
-# 1. Basic: Simple rephrasing without altering the structure or meaning significantly.
-# 2. Moderate: Rephrasing that involves changing sentence structure and using synonyms to enhance clarity.
-# 3. Advanced: Rephrasing that requires a thorough understanding of the text, including the ability to reorganize ideas and concepts while preserving the original message.
-# 4. Expert: Rephrasing that demonstrates a high level of linguistic skill, including the use of advanced vocabulary, varied sentence structures, and the ability to convey the same information in a completely new and creative way.

@@ -4,7 +4,7 @@ from tqdm.asyncio import tqdm as tqdm_async
 
 from .operators import *
 from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch, Tokenizer
-from typing import List, cast
+from typing import List, cast, Union
 
 from dataclasses import dataclass
 from utils import create_event_loop, logger, set_logger, compute_content_hash
@@ -47,40 +47,76 @@ class GraphRag:
     if_web_search: bool = False
     wiki_client: WikiSearch = WikiSearch()
 
-    def insert(self, chunks: List[Chunk]):
-        loop = create_event_loop()
-        loop.run_until_complete(self.async_insert(chunks))
+    async def async_split_chunks(self, data: Union[List[list], List[dict]], data_type: str) -> dict:
+        # TODO： 是否进行指代消解
+        if len(data) == 0:
+            return {}
 
-    async def async_insert(self, chunks: List[Chunk]):
+        new_docs = {}
+        inserting_chunks = {}
+        if data_type == "raw":
+            assert isinstance(data, list) and isinstance(data[0], dict)
+            # compute hash for each document
+            new_docs = {
+                compute_content_hash(doc['content'], prefix="doc-"): {'content': doc['content']} for doc in data
+            }
+            _add_doc_keys = await self.full_docs_storage.filter_keys(list(new_docs.keys()))
+            new_docs = {k: v for k, v in new_docs.items() if k in _add_doc_keys}
+            if not len(new_docs):
+                logger.warning("All docs are already in the storage")
+                return {}
+            logger.info(f"[New Docs] inserting {len(new_docs)} docs")
+            for doc_key, doc in tqdm_async(
+                    new_docs.items(), desc="Chunking documents", unit="doc"
+                ):
+                chunks = {
+                    compute_content_hash(dp["content"], prefix="chunk-"): {
+                        **dp,
+                        'full_doc_id': doc_key
+                    } for dp in self.tokenizer_instance.chunk_by_token_size(doc["content"], self.chunk_overlap_size, self.chunk_size)
+                }
+                inserting_chunks.update(chunks)
+            _add_chunk_keys = await self.text_chunks_storage.filter_keys(list(inserting_chunks.keys()))
+            inserting_chunks = {k: v for k, v in inserting_chunks.items() if k in _add_chunk_keys}
+        elif data_type == "chunked":
+            assert isinstance(data, list) and isinstance(data[0], list)
+            new_docs = {
+                compute_content_hash("".join(chunk['content']), prefix="doc-"): {'content': "".join(chunk['content'])} for doc in data for chunk in doc
+            }
+            _add_doc_keys = await self.full_docs_storage.filter_keys(list(new_docs.keys()))
+            new_docs = {k: v for k, v in new_docs.items() if k in _add_doc_keys}
+            if not len(new_docs):
+                logger.warning("All docs are already in the storage")
+                return {}
+            logger.info(f"[New Docs] inserting {len(new_docs)} docs")
+            for doc in data:
+                doc_str = "".join([chunk['content'] for chunk in doc])
+                for chunk in doc:
+                    chunk_key = compute_content_hash(chunk['content'], prefix="chunk-")
+                    inserting_chunks[chunk_key] = {
+                        **chunk,
+                        'full_doc_id': compute_content_hash(doc_str, prefix="doc-")
+                    }
+            _add_chunk_keys = await self.text_chunks_storage.filter_keys(list(inserting_chunks.keys()))
+            inserting_chunks = {k: v for k, v in inserting_chunks.items() if k in _add_chunk_keys}
+
+        await self.full_docs_storage.upsert(new_docs)
+        await self.text_chunks_storage.upsert(inserting_chunks)
+
+        return inserting_chunks
+
+    def insert(self, data: Union[List[list], List[dict]], data_type: str):
+        loop = create_event_loop()
+        loop.run_until_complete(self.async_insert(data, data_type))
+
+    async def async_insert(self, data: Union[List[list], List[dict]], data_type: str):
         """
 
         insert chunks into the graph
         """
 
-        # compute hash for each chunk
-        new_docs = {
-            compute_content_hash(chunk.content, prefix="doc-"): {'content': chunk.content} for chunk in chunks
-        }
-        _add_doc_keys = await self.full_docs_storage.filter_keys(list(new_docs.keys()))
-        new_docs = {k: v for k, v in new_docs.items() if k in _add_doc_keys}
-        if not len(new_docs):
-            logger.warning("All docs are already in the storage")
-            return
+        inserting_chunks = await self.async_split_chunks(data, data_type)
 
-        logger.info(f"[New Docs] inserting {len(new_docs)} docs")
-        inserting_chunks = {}
-        for doc_key, doc in tqdm_async(
-                new_docs.items(), desc="Chunking documents", unit="doc"
-            ):
-            chunks = {
-                compute_content_hash(dp["content"], prefix="chunk-"): {
-                    **dp,
-                    'full_doc_id': doc_key
-                } for dp in self.tokenizer_instance.chunk_by_token_size(doc["content"], self.chunk_overlap_size, self.chunk_size)
-            }
-            inserting_chunks.update(chunks)
-        _add_chunk_keys = await self.text_chunks_storage.filter_keys(list(inserting_chunks.keys()))
-        inserting_chunks = {k: v for k, v in inserting_chunks.items() if k in _add_chunk_keys}
         if not len(inserting_chunks):
             logger.warning("All chunks are already in the storage")
             return
@@ -106,9 +142,6 @@ class GraphRag:
                 knowledge_graph_instance=_add_entities_and_relations
             )
             await self.wiki_storage.upsert(_add_wiki_data)
-
-        await self.full_docs_storage.upsert(new_docs)
-        await self.text_chunks_storage.upsert(inserting_chunks)
 
         await self._insert_done()
 

@@ -1,13 +1,13 @@
 import os
 import json
 import argparse
-from graphrag.graphrag import GraphRag
+from graphgen.graphgen import GraphGen
 from models import OpenAIModel, Tokenizer
 from dotenv import load_dotenv
 from utils import set_logger
 
 sys_path = os.path.abspath(os.path.dirname(__file__))
-set_logger(os.path.join(sys_path, "cache", "logs", "graphrag.log"), if_stream=False)
+set_logger(os.path.join(sys_path, "cache", "logs", "graphgen.log"), if_stream=False)
 
 load_dotenv()
 
@@ -52,7 +52,7 @@ if __name__ == '__main__':
         base_url=os.getenv("STUDENT_BASE_URL")
     )
 
-    graph_rag = GraphRag(
+    graph_rag = GraphGen(
         teacher_llm_client=teacher_llm_client,
         student_llm_client=student_llm_client,
         if_web_search=args.web_search,

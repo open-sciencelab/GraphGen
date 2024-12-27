@@ -1,6 +1,6 @@
 import logging
 
-logger = logging.getLogger("graphrag")
+logger = logging.getLogger("graphgen")
 
 def set_logger(log_file: str, log_level: int = logging.INFO, if_stream: bool = True):
     logger.setLevel(log_level)

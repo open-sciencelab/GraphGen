@@ -15,7 +15,7 @@ sys_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
 @dataclass
-class GraphRag:
+class GraphGen:
     working_dir: str = os.path.join(sys_path, "cache")
     full_docs_storage: JsonKVStorage = JsonKVStorage(
         working_dir, namespace="full_docs"

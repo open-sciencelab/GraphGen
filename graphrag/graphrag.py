@@ -7,12 +7,12 @@ from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearc
 from typing import List, cast, Union
 
 from dataclasses import dataclass
-from utils import create_event_loop, logger, set_logger, compute_content_hash
+from utils import create_event_loop, logger, compute_content_hash
 from models.storage.base_storage import StorageNameSpace
 
 
 sys_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-set_logger(os.path.join(sys_path, "cache", "graphrag.log"))
+
 
 @dataclass
 class GraphRag:
@@ -41,7 +41,7 @@ class GraphRag:
     # llm
     teacher_llm_client: OpenAIModel = None
     student_llm_client: OpenAIModel = None
-    tokenizer_instance: Tokenizer = Tokenizer()
+    tokenizer_instance: Tokenizer = None
 
     # web search
     if_web_search: bool = False

@@ -8,7 +8,7 @@ from models import LengthEvaluator, MTLDEvaluator, RewardEvaluator, TextPair, Un
 from utils import logger, set_logger
 
 sys_path = os.path.abspath(os.path.dirname(__file__))
-set_logger(os.path.join(sys_path, "cache", "evaluate.log"))
+set_logger(os.path.join(sys_path, "cache", "logs", "evaluate.log"))
 
 load_dotenv()
 

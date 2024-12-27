@@ -89,7 +89,7 @@ class GraphRag:
                 logger.warning("All docs are already in the storage")
                 return {}
             logger.info(f"[New Docs] inserting {len(new_docs)} docs")
-            for doc in data:
+            for doc in tqdm_async(data, desc="Chunking documents", unit="doc"):
                 doc_str = "".join([chunk['content'] for chunk in doc])
                 for chunk in doc:
                     chunk_key = compute_content_hash(chunk['content'], prefix="chunk-")

@@ -1,7 +1,7 @@
 import math
 from dataclasses import dataclass
 from typing import List, Dict, Optional
-from openai import AsyncOpenAI, RateLimitError, APIConnectionError, Timeout
+from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from models import TopkTokenModel, Token
 from tenacity import (
     retry,
@@ -63,7 +63,7 @@ class OpenAIModel(TopkTokenModel):
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type((RateLimitError, APIConnectionError, Timeout)),
+        retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)),
     )
     async def generate_topk_per_token(self, text: str, history: Optional[List[str]] = None) -> List[Token]:
         kwargs = self._pre_generate(text, history)
@@ -83,7 +83,7 @@ class OpenAIModel(TopkTokenModel):
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=retry_if_exception_type((RateLimitError, APIConnectionError, Timeout)),
+        retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)),
     )
     async def generate_answer(self, text: str, history: Optional[List[str]] = None) -> str:
         kwargs = self._pre_generate(text, history)

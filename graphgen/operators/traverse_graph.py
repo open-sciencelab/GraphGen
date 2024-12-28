@@ -158,6 +158,9 @@ async def traverse_graph_by_edge(
     for result in tqdm_async(asyncio.as_completed(
         [_process_single_batch(batch) for batch in processing_batches]
     ), total=len(processing_batches), desc="Processing batches"):
-        results.update(await result)
+        try:
+            results.update(await result)
+        except Exception as e:
+            logger.error("Error occurred while processing batches: %s", e)
 
     return results

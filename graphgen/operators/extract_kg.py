@@ -97,10 +97,13 @@ async def extract_kg(
     for result in tqdm_async(
         asyncio.as_completed([_process_single_content(c) for c in chunks]),
         total=len(chunks),
-        desc="Extracting entities from chunks",
+        desc="Extracting entities and relationships from chunks",
         unit="chunk",
     ):
-        results.append(await result)
+        try:
+            results.append(await result)
+        except Exception as e:
+            logger.error("Error occurred while extracting entities and relationships from chunks: %s", e)
 
     nodes = defaultdict(list)
     edges = defaultdict(list)
@@ -120,7 +123,10 @@ async def extract_kg(
         desc="Inserting entities into storage",
         unit="entity",
     ):
-        entities_data.append(await result)
+        try:
+            entities_data.append(await result)
+        except Exception as e:
+            logger.error("Error occurred while inserting entities into storage: %s", e)
 
     logger.info("Inserting relationships into storage...")
     relationships_data = []
@@ -134,6 +140,9 @@ async def extract_kg(
         desc="Inserting relationships into storage",
         unit="relationship",
     ):
-        relationships_data.append(await result)
+        try:
+            relationships_data.append(await result)
+        except Exception as e:
+            logger.error("Error occurred while inserting relationships into storage: %s", e)
 
     return kg_instance

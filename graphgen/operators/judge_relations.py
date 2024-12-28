@@ -64,6 +64,9 @@ async def judge_relations(
             total=len(edges),
             desc="Judging relations"
     ):
-        results.append(await result)
+        try:
+            results.append(await result)
+        except Exception as e:
+            logger.error("Error in judging relations: %s", e)
 
     return graph_storage

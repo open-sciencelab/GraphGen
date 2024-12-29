@@ -13,7 +13,6 @@ from utils import (logger, pack_history_conversations, split_string_by_multi_mar
 from .merge_kg import merge_nodes, merge_edges
 
 
-
 async def extract_kg(
         llm_client: OpenAIModel,
         kg_instance: BaseGraphStorage,
@@ -113,36 +112,7 @@ async def extract_kg(
         for k, v in e.items():
             edges[tuple(sorted(k))].extend(v)
 
-    logger.info("Inserting entities into storage...")
-    entities_data = []
-    for result in tqdm_async(
-        asyncio.as_completed(
-            [merge_nodes(k, v, kg_instance, llm_client, tokenizer_instance) for k, v in nodes.items()]
-        ),
-        total=len(nodes),
-        desc="Inserting entities into storage",
-        unit="entity",
-    ):
-        try:
-            entities_data.append(await result)
-        except Exception as e:
-            logger.error("Error occurred while inserting entities into storage: %s", e)
-
-    logger.info("Inserting relationships into storage...")
-    relationships_data = []
-
-    for result in tqdm_async(
-        asyncio.as_completed(
-            [merge_edges(src_id, tgt_id, v, kg_instance, llm_client, tokenizer_instance) for
-             (src_id, tgt_id), v in edges.items()]
-        ),
-        total=len(edges),
-        desc="Inserting relationships into storage",
-        unit="relationship",
-    ):
-        try:
-            relationships_data.append(await result)
-        except Exception as e:
-            logger.error("Error occurred while inserting relationships into storage: %s", e)
+    await merge_nodes(nodes, kg_instance, llm_client, tokenizer_instance)
+    await merge_edges(edges, kg_instance, llm_client, tokenizer_instance)
 
     return kg_instance

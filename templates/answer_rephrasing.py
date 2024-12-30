@@ -1,10 +1,9 @@
-TEMPLATE: str = """---Role---
+TEMPLATE_EN: str = """---Role---
 
-You are a helpful assistant responsible for generating a logically structured and coherent rephrased version of the TEXT based on ENTITIES and RELATIONSHIPS provided below.
+You are an NLP expert responsible for generating a logically structured and coherent rephrased version of the TEXT based on ENTITIES and RELATIONSHIPS provided below.
 Use {language} as output language.
 
 ---Goal---
-
 To generate a version of the text that is rephrased and conveys the same meaning as the original entity and relationship descriptions, while:
 1. Following a clear logical flow and structure
 2. Establishing proper cause-and-effect relationships
@@ -32,9 +31,7 @@ To generate a version of the text that is rephrased and conveys the same meaning
 
 4. Review and refine the text to ensure:
    - Logical consistency throughout
-   - Natural progression of ideas
    - Clear cause-and-effect relationships
-   - Smooth transitions between concepts
 
 ################
 -ENTITIES-
@@ -50,6 +47,59 @@ To generate a version of the text that is rephrased and conveys the same meaning
 Rephrased Text:
 """
 
+TEMPLATE_ZH: str = """---角色---
+
+你是一位NLP专家，负责根据下面提供的实体和关系生成逻辑结构清晰且连贯的文本重述版本。
+使用{language}作为输出语言。
+
+---目标---
+
+生成文本的重述版本，使其传达与原始实体和关系描述相同的含义，同时：
+1. 遵循清晰的逻辑流和结构
+2. 建立适当的因果关系
+3. 确保时间和顺序的一致性
+4. 使用连词和适当的连接词(如"首先"、"然而"、"因此"等)创造流畅的过渡
+
+---说明---
+1. 仔细分析提供的实体和关系，以识别：
+    - 关键概念及其层级关系
+    - 时间序列和时间顺序
+    - 因果关系
+    - 不同元素之间的依赖关系
+2. 通过以下方式将信息组织成逻辑顺序：
+    - 从基础概念开始
+    - 逐步建立更复杂的关系
+    - 将相关的想法分组在一起
+    - 在各部分之间创建清晰的过渡
+3. 重述文本时保持：
+    - 逻辑流畅
+    - 概念之间的清晰联系
+    - 适当的上下文和背景
+    - 连贯的叙述结构
+4. 检查和完善文本以确保：
+    - 整体逻辑一致性
+    - 清晰的因果关系
+
+################
+-实体-
+################
+{entities}
+
+################
+-关系-
+################
+{relationships}
+
+################
+重述文本:
+"""
+
+
 ANSWER_REPHRASING_PROMPT= {
-    "TEMPLATE": TEMPLATE
+    "English": {
+        "TEMPLATE": TEMPLATE_EN
+    },
+    "Chinese": {
+        "TEMPLATE": TEMPLATE_ZH
+    }
 }

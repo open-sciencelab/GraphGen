@@ -81,8 +81,9 @@ async def traverse_graph_by_edge(
         entities_str = "\n".join([f"{i + 1}. {entity}" for i, entity in enumerate(entities)])
         relations_str = "\n".join([f"{i + 1}. {relation}" for i, relation in enumerate(relations)])
 
-        prompt = ANSWER_REPHRASING_PROMPT['TEMPLATE'].format(
-            language="Chinese" if detect_main_language(entities_str + relations_str) == "zh" else "English",
+        language = "Chinese" if detect_main_language(entities_str + relations_str) == "zh" else "English"
+        prompt = ANSWER_REPHRASING_PROMPT[language]['TEMPLATE'].format(
+            language=language,
             entities=entities_str,
             relationships=relations_str
         )

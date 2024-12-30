@@ -52,7 +52,7 @@ if __name__ == '__main__':
         base_url=os.getenv("STUDENT_BASE_URL")
     )
 
-    graph_rag = GraphGen(
+    graph_gen = GraphGen(
         teacher_llm_client=teacher_llm_client,
         student_llm_client=student_llm_client,
         if_web_search=args.web_search,
@@ -61,8 +61,8 @@ if __name__ == '__main__':
         )
     )
 
-    graph_rag.insert(data, args.data_type)
+    graph_gen.insert(data, args.data_type)
 
-    graph_rag.judge()
+    graph_gen.judge()
 
-    graph_rag.traverse()
+    graph_gen.traverse()

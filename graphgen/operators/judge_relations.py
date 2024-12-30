@@ -1,6 +1,6 @@
 import asyncio
 from models import NetworkXStorage
-from utils import logger, yes_no_loss
+from utils import logger, yes_no_loss, detect_main_language
 from templates import ANTI_DESCRIPTION_REPHRASING_PROMPT, STATEMENT_JUDGEMENT_PROMPT
 from models import OpenAIModel
 from tqdm.asyncio import tqdm as tqdm_async
@@ -32,8 +32,10 @@ async def judge_relations(
             edge_data = edge[2]
             description = edge_data["description"]
 
+            language = "English" if detect_main_language(description) == "en" else "Chinese"
+
             anti_description = await teacher_llm_client.generate_answer(
-                ANTI_DESCRIPTION_REPHRASING_PROMPT['TEMPLATE'].format(input_sentence=description)
+                ANTI_DESCRIPTION_REPHRASING_PROMPT[language]['TEMPLATE'].format(input_sentence=description)
             )
 
             judgement = await student_llm_client.generate_topk_per_token(

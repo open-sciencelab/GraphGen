@@ -1,0 +1,109 @@
+# https://arxiv.org/abs/2305.11952
+
+import asyncio
+from dataclasses import dataclass
+from models import OpenAIModel
+from typing import List
+from utils import create_event_loop, compute_content_hash
+from tqdm.asyncio import tqdm as tqdm_async
+
+INSTRUCTION_GENERATION_PROMPT = '''The background knowledge is:
+{doc}
+
+Please generate ten instruction questions as diverse as possible based on the content of the above article.
+These questions can be questions about facts or an understanding and evaluation of relevant content.
+Please assume that there is no corresponding article to refer to when asking questions, so do not use demonstrative pronouns such as “this” or “these” in the question.
+
+Please generate questions in the following format:
+1. Question: ...
+2. Question: ...
+'''
+
+READING_COMPREHENSION_PROMPT = '''The background knowledge is:
+{doc}
+Please answer the following question based on the content of the article above:
+{question}
+
+Please answer this question as thoroughly as possible, but do not change the key information in the original text, and do not include expressions such as “based on the above article” in the answer.
+
+Please generate the corresponding answer in the following format:
+Question: ...
+Answer: ...
+'''
+
+def _post_process_instructions(content: str) -> list:
+    lines = content.split('\n')
+    questions = []
+    for line in lines:
+        if "Question:" in line:
+            question = line.split('Question:')[1].strip()
+            questions.append(question)
+    return questions
+
+def _post_process_answers(content: str) -> tuple:
+    if "Question:" in content and "Answer:" in content:
+        question = content.split('Question:')[1].split('Answer:')[0].strip()
+        answer = content.split('Answer:')[1].strip()
+        return question, answer
+
+@dataclass
+class SelfQA:
+    llm_client: OpenAIModel = None
+
+    def generate(self, docs: List[List[dict]]) -> List[dict]:
+        loop = create_event_loop()
+        return loop.run_until_complete(self.async_generate(docs))
+
+    async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
+        results = []
+        for doc in tqdm_async(docs, desc="Generating using SelfQA"):
+            for chunk in doc:
+                content = chunk['content']
+                instruction_generation_prompt = INSTRUCTION_GENERATION_PROMPT.format(doc=content)
+                try:
+                    instruction_questions = await self.llm_client.generate_answer(instruction_generation_prompt)
+                    instruction_questions = _post_process_instructions(instruction_questions)
+
+                    for result in asyncio.as_completed([self.llm_client.generate_answer(READING_COMPREHENSION_PROMPT.format(doc=content, question=question)) for question in instruction_questions]):
+                        try:
+                            result = await result
+                            question, answer = _post_process_answers(result)
+                            results.append({
+                                compute_content_hash(question): {
+                                    'question': question,
+                                    'answer': answer
+                                }
+                            })
+                        except Exception as e:
+                            print(f"Error: {e}")
+                            continue
+                except Exception as e:
+                    print(f"Error: {e}")
+                    continue
+
+        return results
+
+if __name__ == "__main__":
+    import os
+    import json
+    from dotenv import load_dotenv
+    from models import OpenAIModel
+
+    load_dotenv()
+
+    llm_client = OpenAIModel(
+        model_name=os.getenv("TEACHER_MODEL"),
+        api_key=os.getenv("TEACHER_API_KEY"),
+        base_url=os.getenv("TEACHER_BASE_URL")
+    )
+
+    self_qa = SelfQA(llm_client=llm_client)
+
+    with open("../../resources/examples/chunked_demo.json", "r") as f:
+        data = json.load(f)
+
+    results = self_qa.generate(data)
+
+    # Save results
+    with open("../../cache/data/self_qa_results.json", "w") as f:
+        json.dump(results, f, indent=4, ensure_ascii=False)

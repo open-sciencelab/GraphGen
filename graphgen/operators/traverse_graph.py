@@ -101,8 +101,9 @@ async def traverse_graph_by_edge(
                 _process_batch[1],
             )
 
+            language = "Chinese" if detect_main_language(context) == "zh" else "English"
             question = await llm_client.generate_answer(
-                QUESTION_GENERATION_PROMPT['TEMPLATE'].format(
+                QUESTION_GENERATION_PROMPT[language]['TEMPLATE'].format(
                     answer=context
                 )
             )

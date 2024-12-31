@@ -34,26 +34,30 @@ async def judge_relations(
 
             language = "English" if detect_main_language(description) == "en" else "Chinese"
 
-            anti_description = await teacher_llm_client.generate_answer(
-                ANTI_DESCRIPTION_REPHRASING_PROMPT[language]['TEMPLATE'].format(input_sentence=description)
-            )
+            try:
+                anti_description = await teacher_llm_client.generate_answer(
+                    ANTI_DESCRIPTION_REPHRASING_PROMPT[language]['TEMPLATE'].format(input_sentence=description)
+                )
 
-            judgement = await student_llm_client.generate_topk_per_token(
-                STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=description)
-            )
-            anti_judgement = await student_llm_client.generate_topk_per_token(
-                STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=anti_description)
-            )
+                judgement = await student_llm_client.generate_topk_per_token(
+                    STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=description)
+                )
+                anti_judgement = await student_llm_client.generate_topk_per_token(
+                    STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=anti_description)
+                )
 
-            loss = yes_no_loss(
-                [judgement[0].top_candidates, anti_judgement[0].top_candidates],
-                ['yes', 'no']
-            )
+                loss = yes_no_loss(
+                    [judgement[0].top_candidates, anti_judgement[0].top_candidates],
+                    ['yes', 'no']
+                )
 
-            logger.info(f"Edge {source_id} -> {target_id} description: {description} loss: {loss}")
+                logger.info(f"Edge {source_id} -> {target_id} description: {description} loss: {loss}")
 
-            # 将loss加入到边的属性中
-            edge_data["loss"] = loss
+                edge_data["loss"] = loss
+            except Exception as e:
+                logger.error(f"Error in judging relation {source_id} -> {target_id}: {e}")
+                logger.info("Use default loss 0.1")
+                edge_data["loss"] = 0.1
 
             await graph_storage.update_edge(source_id, target_id, edge_data)
             return source_id, target_id, edge_data
@@ -66,9 +70,6 @@ async def judge_relations(
             total=len(edges),
             desc="Judging relations"
     ):
-        try:
             results.append(await result)
-        except Exception as e:
-            logger.error("Error in judging relations: %s", e)
 
     return graph_storage

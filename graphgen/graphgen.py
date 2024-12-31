@@ -1,4 +1,5 @@
 import os
+import time
 import asyncio
 from tqdm.asyncio import tqdm as tqdm_async
 
@@ -29,9 +30,8 @@ class GraphGen:
     graph_storage: NetworkXStorage = NetworkXStorage(
         working_dir, namespace="graph"
     )
-
     qa_storage: JsonKVStorage = JsonKVStorage(
-        working_dir, namespace="qa"
+        os.path.join(working_dir, "data", "graphgen"), namespace=f"qa-{int(time.time())}"
     )
 
     # text chunking

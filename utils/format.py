@@ -79,5 +79,7 @@ def load_json(file_name):
         return json.load(f)
 
 def write_json(json_obj, file_name):
+    if not os.path.exists(os.path.dirname(file_name)):
+        os.makedirs(os.path.dirname(file_name), exist_ok=True)
     with open(file_name, "w", encoding="utf-8") as f:
         json.dump(json_obj, f, indent=4, ensure_ascii=False)

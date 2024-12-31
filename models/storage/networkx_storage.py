@@ -77,7 +77,7 @@ class NetworkXStorage(BaseGraphStorage):
         如果图文件存在，则加载图文件，否则创建一个新图
         """
         self._graphml_xml_file = os.path.join(
-            self.working_dir, f"graph_{self.namespace}.graphml"
+            self.working_dir, f"{self.namespace}.graphml"
         )
         preloaded_graph = NetworkXStorage.load_nx_graph(self._graphml_xml_file)
         if preloaded_graph is not None:

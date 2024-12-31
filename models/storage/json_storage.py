@@ -9,7 +9,7 @@ class JsonKVStorage(BaseKVStorage):
     _data: dict[str, str] = None
 
     def __post_init__(self):
-        self._file_name = os.path.join(self.working_dir, f"kv_store_{self.namespace}.json")
+        self._file_name = os.path.join(self.working_dir, f"{self.namespace}.json")
         self._data = load_json(self._file_name) or {}
         logger.info(f"Load KV {self.namespace} with {len(self._data)} data")
 

@@ -1,22 +1,22 @@
-from openai import OpenAI
+from openai import AsyncOpenAI
 import dotenv
 import os
 
 dotenv.load_dotenv()
 
-def gptqa(prompt: str,
+async def gptqa(prompt: str,
           openai_model_name: str,
           system_message: str,
           json_format: bool = False,
           temp: float = 1.0):
-    client = OpenAI(
+    client = AsyncOpenAI(
         api_key=os.getenv("TEACHER_API_KEY"),
         base_url=os.getenv("TEACHER_BASE_URL")
     )
     openai_model_name = openai_model_name or os.getenv("TEACHER_MODEL")
 
     if json_format:
-        completion = client.chat.completions.create(
+        completion = await client.chat.completions.create(
             model=openai_model_name,
             temperature=temp,
             response_format={ "type": "json_object" },
@@ -27,7 +27,7 @@ def gptqa(prompt: str,
                 "content": prompt},
             ])
     else:
-        completion = client.chat.completions.create(
+        completion = await client.chat.completions.create(
             model=openai_model_name,
             temperature=temp,
             messages=[

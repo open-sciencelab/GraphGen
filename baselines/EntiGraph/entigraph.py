@@ -4,10 +4,7 @@
 import json
 import asyncio
 
-from tqdm import tqdm
-
 from inference.devapi import gptqa
-from entigraph_utils.io_utils import jload, jdump
 from tasks.baseline_task import BaselineTask
 import random
 from tqdm.asyncio import tqdm as tqdm_async
@@ -98,8 +95,12 @@ async def generate_synthetic_data_for_document(model_name: str):
             total=len(pair_list),
             desc="Generating synthetic data"
         ):
-            if response:
-                output.append(response)
+            try:
+                response = await response
+                if response:
+                    output.append(response)
+            except Exception as e:
+                print(f"Error: {e}")
 
         # # iterate over triples of entities and generate relations
         # triple_list = []
@@ -116,9 +117,9 @@ async def generate_synthetic_data_for_document(model_name: str):
         #         model_name)
         #     if response:
         #         output.append(response)
-        #
-        # corpus = output[1:]
-        # return corpus
+
+        corpus = output[1:]
+        return corpus
 
     results = []
     for result in tqdm_async(
@@ -128,7 +129,8 @@ async def generate_synthetic_data_for_document(model_name: str):
     ):
         results.append(await result)
 
-    print(results)
+    with open("../../cache/data/entigraph.json", "w") as f:
+        json.dump(results, f, indent=4, ensure_ascii=False)
 
 
 

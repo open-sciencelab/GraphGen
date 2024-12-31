@@ -39,12 +39,14 @@ def _get_level_2_edges(
     """
     level_2_edges = []
     for edge in edges:
+        if "visited" in edge[2] and edge[2]["visited"]:
+            continue
         if edge[0] == node_id:
             level_2_edges.append(edge)
-            edges.remove(edge)
+            edge[2]["visited"] = True
         elif edge[1] == node_id:
             level_2_edges.append((edge[1], edge[0], edge[2]))
-            edges.remove(edge)
+            edge[2]["visited"] = True
         if len(level_2_edges) >= top_extra_edges:
             break
     return level_2_edges
@@ -134,28 +136,32 @@ async def traverse_graph_by_edge(
             node_cache[node_id] = await _get_node_info(node_id, graph_storage)
         return node_cache[node_id]
 
-    with tqdm_async(total=len(edges), desc="Preparing batches") as pbar:
-        while len(edges) > 0:
-            _process_nodes = []
-            _process_edges = []
+    for edge in tqdm_async(edges, desc="Preparing batches"):
+        if "visited" in edge[2] and edge[2]["visited"]:
+            continue
 
-            max_loss_edge = edges.pop(0)
-            src_id = max_loss_edge[0]
-            tgt_id = max_loss_edge[1]
+        edge[2]["visited"] = True
 
-            _process_nodes.append(await get_cached_node_info(src_id))
-            _process_nodes.append(await get_cached_node_info(tgt_id))
-            _process_edges.append(max_loss_edge)
+        _process_nodes = []
+        _process_edges = []
 
-            level_2_edges = _get_level_2_edges(edges, tgt_id, top_extra_edges)
-            assert len(level_2_edges) <= top_extra_edges
+        src_id = edge[0]
+        tgt_id = edge[1]
 
-            for edge in level_2_edges:
-                _process_nodes.append(await get_cached_node_info(edge[1]))
-                _process_edges.append(edge)
+        _process_nodes.extend([await get_cached_node_info(src_id), await get_cached_node_info(tgt_id)])
+        _process_edges.append(edge)
 
-            processing_batches.append((_process_nodes, _process_edges))
-            pbar.update(1 + len(level_2_edges))
+        level_2_edges = _get_level_2_edges(edges, tgt_id, top_extra_edges)
+        assert len(level_2_edges) <= top_extra_edges
+
+        for _edge in level_2_edges:
+            _process_nodes.append(await get_cached_node_info(_edge[1]))
+            _process_edges.append(_edge)
+
+        processing_batches.append((_process_nodes, _process_edges))
+
+
+
 
     # isolate nodes
     visited_nodes = set()

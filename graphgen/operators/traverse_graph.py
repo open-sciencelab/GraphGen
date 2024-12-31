@@ -1,4 +1,5 @@
 import asyncio
+
 from models import OpenAIModel, NetworkXStorage
 from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
 from utils import detect_main_language, compute_content_hash, logger
@@ -22,6 +23,7 @@ async def _get_node_info(
         **node_data
     }
 
+
 def _get_level_2_edges(
     edges: list,
     node_id: str,
@@ -35,7 +37,6 @@ def _get_level_2_edges(
     :param top_extra_edges: top extra edges
     :return: level 2 edges
     """
-    edges = sorted(edges, key=lambda x: x[2]["loss"], reverse=True)
     level_2_edges = []
     for edge in edges:
         if edge[0] == node_id:
@@ -122,30 +123,39 @@ async def traverse_graph_by_edge(
     edges = list(await graph_storage.get_all_edges())
     nodes = await graph_storage.get_all_nodes()
 
+    # 按照loss从大到小排序
+    edges = sorted(edges, key=lambda x: x[2]["loss"], reverse=True)
+
     processing_batches = []
-    while len(edges) > 0:
-        # 按照loss从大到小排序
-        edges = sorted(edges, key=lambda x: x[2]["loss"], reverse=True)
+    node_cache = {}
 
-        _process_nodes = []
-        _process_edges = []
+    async def get_cached_node_info(node_id):
+        if node_id not in node_cache:
+            node_cache[node_id] = await _get_node_info(node_id, graph_storage)
+        return node_cache[node_id]
 
-        max_loss_edge = edges.pop(0)
-        src_id = max_loss_edge[0]
-        tgt_id = max_loss_edge[1]
+    with tqdm_async(total=len(edges), desc="Preparing batches") as pbar:
+        while len(edges) > 0:
+            _process_nodes = []
+            _process_edges = []
 
-        _process_nodes.append(await _get_node_info(src_id, graph_storage))
-        _process_nodes.append(await _get_node_info(tgt_id, graph_storage))
-        _process_edges.append(max_loss_edge)
+            max_loss_edge = edges.pop(0)
+            src_id = max_loss_edge[0]
+            tgt_id = max_loss_edge[1]
 
-        level_2_edges = _get_level_2_edges(edges, tgt_id, top_extra_edges)
-        assert len(level_2_edges) <= top_extra_edges
+            _process_nodes.append(await get_cached_node_info(src_id))
+            _process_nodes.append(await get_cached_node_info(tgt_id))
+            _process_edges.append(max_loss_edge)
 
-        for edge in level_2_edges:
-            _process_nodes.append(await _get_node_info(edge[1], graph_storage))
-            _process_edges.append(edge)
+            level_2_edges = _get_level_2_edges(edges, tgt_id, top_extra_edges)
+            assert len(level_2_edges) <= top_extra_edges
 
-        processing_batches.append((_process_nodes, _process_edges))
+            for edge in level_2_edges:
+                _process_nodes.append(await get_cached_node_info(edge[1]))
+                _process_edges.append(edge)
+
+            processing_batches.append((_process_nodes, _process_edges))
+            pbar.update(1 + len(level_2_edges))
 
     # isolate nodes
     visited_nodes = set()

@@ -10,6 +10,7 @@ async def judge_relations(
         teacher_llm_client: OpenAIModel,
         student_llm_client: OpenAIModel,
         graph_storage: NetworkXStorage,
+        re_judge: bool = False,
         max_concurrent: int = 1000) -> NetworkXStorage:
     """
     Get all edges and judge them
@@ -17,6 +18,7 @@ async def judge_relations(
     :param teacher_llm_client: generate statements
     :param student_llm_client: judge the statements to get comprehension loss
     :param graph_storage: graph storage instance
+    :param re_judge: re-judge the relations
     :param max_concurrent: max concurrent
     :return:
     """
@@ -30,6 +32,11 @@ async def judge_relations(
             source_id = edge[0]
             target_id = edge[1]
             edge_data = edge[2]
+
+            if (not re_judge) and "loss" in edge_data and edge_data["loss"] is not None:
+                logger.info(f"Edge {source_id} -> {target_id} already judged, loss: {edge_data['loss']}, skip")
+                return source_id, target_id, edge_data
+
             description = edge_data["description"]
 
             language = "English" if detect_main_language(description) == "en" else "Chinese"

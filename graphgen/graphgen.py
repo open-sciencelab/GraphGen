@@ -153,12 +153,12 @@ class GraphGen:
             tasks.append(cast(StorageNameSpace, storage_instance).index_done_callback())
         await asyncio.gather(*tasks)
 
-    def judge(self):
+    def judge(self, re_judge=False):
         loop = create_event_loop()
-        loop.run_until_complete(self.async_judge())
+        loop.run_until_complete(self.async_judge(re_judge))
 
-    async def async_judge(self):
-        _update_relations = await judge_relations(self.teacher_llm_client, self.student_llm_client, self.graph_storage)
+    async def async_judge(self, re_judge=False):
+        _update_relations = await judge_relations(self.teacher_llm_client, self.student_llm_client, self.graph_storage, re_judge)
         await _update_relations.index_done_callback()
 
     def traverse(self):

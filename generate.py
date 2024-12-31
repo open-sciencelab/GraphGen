@@ -63,6 +63,6 @@ if __name__ == '__main__':
 
     graph_gen.insert(data, args.data_type)
 
-    graph_gen.judge()
+    graph_gen.judge(re_judge=False)
 
     graph_gen.traverse()

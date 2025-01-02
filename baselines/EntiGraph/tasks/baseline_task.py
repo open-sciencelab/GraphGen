@@ -7,12 +7,13 @@ from baselines.EntiGraph.entigraph_utils.prompt_utils import (
                                 OPENAI_API_SYSTEM_QUALITY_GENERATE_ENTITIES,
                                 OPENAI_API_SYSTEM_QUALITY_GENERATE_TWO_ENTITY_RELATIONS,
                                 OPENAI_API_SYSTEM_QUALITY_GENERATE_THREE_ENTITY_RELATIONS,
-                                QUALITY_FEW_SHOT_COT_PROMPT)
+                                QUALITY_FEW_SHOT_COT_PROMPT, OPENAI_API_SYSTEM_QUALITY_QA_SFT)
 
 class BaselineTask(Task):
     openai_system_generate_entities = OPENAI_API_SYSTEM_QUALITY_GENERATE_ENTITIES
     openai_system_generate_two_entity_relations = OPENAI_API_SYSTEM_QUALITY_GENERATE_TWO_ENTITY_RELATIONS
     openai_system_generate_three_entity_relations = OPENAI_API_SYSTEM_QUALITY_GENERATE_THREE_ENTITY_RELATIONS
+    openai_system_quality_qa_sft = OPENAI_API_SYSTEM_QUALITY_QA_SFT
     llama_cot_prompt = QUALITY_FEW_SHOT_COT_PROMPT
 
     @staticmethod

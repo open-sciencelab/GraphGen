@@ -123,40 +123,13 @@ Here is the format you should follow for your response:
 ### Discussion of Interaction between <entity1>, <entity2> and <entity3> in context of <title>
 <Discussion on how the three entities interact within the article>
 """
-LETTER_TO_INDEX = {'A': 0, 'B': 1, 'C': 2, 'D': 3}
 
-from itertools import permutations
+OPENAI_API_SYSTEM_QUALITY_QA_SFT = """You are an assistant to help read a article and then rephrase it in a question answering format. The user will provide you with an article with its content. You need to generate a paraphrase of the same article in question and answer format with multiple tags of "Question: ..." followed by "Answer: ...". Remember to keep the meaning and every content of the article intact.
 
-def uncapitalize_first(s):
-    return s[0].lower() + s[1:]
+Here is the format you should follow for your response:
+Question: <Question>
+Answer: <Answer>
 
-def format_name(name):
-    # Split the name by comma
-    parts = name.split(',')
-
-    # If there is a comma, we assume the format is "Lastname, Firstname"
-    if len(parts) == 2:
-        formatted_name = parts[1].strip() + ' ' + parts[0].strip()
-    else:
-        # If there's no comma, assume the format is already "Firstname Lastname"
-        formatted_name = name.strip()
-
-    return formatted_name
-
-def second_last_character(input_string: str):
-    try:
-        # Remove newline characters from the end of the string
-        modified_string = input_string.rstrip('\n')
-        answer_index = LETTER_TO_INDEX[modified_string[-2]]
-    except (KeyError, IndexError):
-        answer_index = None
-    return answer_index
-
-def generate_all_answer_strings():
-    choices = 'ABCD'
-    all_answers = []
-    for r in range(1, len(choices) + 1):
-        for perm in permutations(choices, r):
-            answer = ''.join(perm)
-            all_answers.append(f'Answer: {answer}.\n')
-    return all_answers
+Here is the article you need to rephrase:
+{doc}
+"""

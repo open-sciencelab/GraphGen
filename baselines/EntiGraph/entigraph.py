@@ -9,6 +9,11 @@ from tasks.baseline_task import BaselineTask
 import random
 from tqdm.asyncio import tqdm as tqdm_async
 
+from hashlib import md5
+
+def compute_content_hash(content, prefix: str = ""):
+    return prefix + md5(content.encode()).hexdigest()
+
 
 async def generate_entities(document_content: str,
                       system_message: str,
@@ -65,6 +70,19 @@ async def generate_three_entity_relations(document_content: str,
                        openai_model,
                        system_message)
     return completion
+
+def _post_process_synthetic_data(data):
+    block = data.split("\n\n")
+    qas = {}
+    for line in block:
+        if "Question: " in line and "Answer: " in line:
+            question = line.split("Question: ")[1].split("Answer: ")[0]
+            answer = line.split("Answer: ")[1]
+            qas[compute_content_hash(question)] = {
+                "question": question,
+                "answer": answer
+            }
+    return qas
 
 
 async def generate_synthetic_data_for_document(model_name: str):
@@ -129,8 +147,30 @@ async def generate_synthetic_data_for_document(model_name: str):
     ):
         results.append(await result)
 
+
+    async def generate_qa_sft(content):
+        completion = await gptqa(content, model_name, task.openai_system_quality_qa_sft)
+        return completion
+
+    qa_sft_results = {}
+    tasks = []
+    for corpus in results:
+        for context in corpus:
+            tasks.append(generate_qa_sft(context))
+
+    for result in tqdm_async(
+            asyncio.as_completed(tasks),
+            total=len(tasks),
+            desc="Generating QA SFT"
+    ):
+        try:
+            result = await result
+            qa_sft_results.update(_post_process_synthetic_data(result))
+        except Exception as e:
+            print(f"Error: {e}")
+
     with open("../../cache/data/entigraph.json", "w") as f:
-        json.dump(results, f, indent=4, ensure_ascii=False)
+        json.dump(qa_sft_results, f, indent=4, ensure_ascii=False)
 
 
 

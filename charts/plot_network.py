@@ -2,15 +2,15 @@ from pyecharts import options as opts
 from pyecharts.charts import Graph
 from models import NetworkXStorage
 
-async def plot_network(networkx_storage: NetworkXStorage):
+async def plot_network(kg_instance: NetworkXStorage):
     """
     Plot network graph
 
-    :param networkx_storage: NetworkXStorage instance
-    :return:
+    :param kg_instance
+    :return
     """
-    entities = await networkx_storage.get_all_nodes()
-    relations = await networkx_storage.get_all_edges()
+    entities = await kg_instance.get_all_nodes()
+    relations = await kg_instance.get_all_edges()
 
     nodes = []
     links = []

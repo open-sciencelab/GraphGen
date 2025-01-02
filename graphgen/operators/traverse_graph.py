@@ -1,4 +1,5 @@
 import asyncio
+from collections import defaultdict
 
 from models import OpenAIModel, NetworkXStorage
 from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
@@ -25,6 +26,7 @@ async def _get_node_info(
 
 
 def _get_level_2_edges(
+    adj_list: dict,
     edges: list,
     node_id: str,
     top_extra_edges: int
@@ -32,13 +34,15 @@ def _get_level_2_edges(
     """
     Get level 2 edges
 
+    :param adj_list: adjacency list
     :param edges: find edges
     :param node_id: source node id
     :param top_extra_edges: top extra edges
     :return: level 2 edges
     """
     level_2_edges = []
-    for edge in edges:
+    for edge_id in adj_list[node_id]:
+        edge = edges[edge_id]
         if "visited" in edge[2] and edge[2]["visited"]:
             continue
         if edge[0] == node_id:
@@ -128,8 +132,14 @@ async def traverse_graph_by_edge(
     # 按照loss从大到小排序
     edges = sorted(edges, key=lambda x: x[2]["loss"], reverse=True)
 
+    # 构建临接矩阵
+    adj_list = defaultdict(list)
     processing_batches = []
     node_cache = {}
+
+    for i, (src, tgt, data) in enumerate(edges):
+        adj_list[src].append(i)
+        adj_list[tgt].append(i)
 
     async def get_cached_node_info(node_id):
         if node_id not in node_cache:
@@ -151,7 +161,7 @@ async def traverse_graph_by_edge(
         _process_nodes.extend([await get_cached_node_info(src_id), await get_cached_node_info(tgt_id)])
         _process_edges.append(edge)
 
-        level_2_edges = _get_level_2_edges(edges, tgt_id, top_extra_edges)
+        level_2_edges = _get_level_2_edges(adj_list, edges, tgt_id, top_extra_edges)
         assert len(level_2_edges) <= top_extra_edges
 
         for _edge in level_2_edges:
@@ -159,9 +169,6 @@ async def traverse_graph_by_edge(
             _process_edges.append(_edge)
 
         processing_batches.append((_process_nodes, _process_edges))
-
-
-
 
     # isolate nodes
     visited_nodes = set()

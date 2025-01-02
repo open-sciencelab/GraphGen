@@ -2,7 +2,7 @@ import os
 import json
 import argparse
 from graphgen.graphgen import GraphGen
-from models import OpenAIModel, Tokenizer
+from models import OpenAIModel, Tokenizer, TraverseStrategy
 from dotenv import load_dotenv
 from utils import set_logger
 
@@ -52,13 +52,16 @@ if __name__ == '__main__':
         base_url=os.getenv("STUDENT_BASE_URL")
     )
 
+    traverse_strategy = TraverseStrategy()
+
     graph_gen = GraphGen(
         teacher_llm_client=teacher_llm_client,
         student_llm_client=student_llm_client,
         if_web_search=args.web_search,
         tokenizer_instance=Tokenizer(
             model_name=args.tokenizer
-        )
+        ),
+        traverse_strategy=traverse_strategy
     )
 
     graph_gen.insert(data, args.data_type)

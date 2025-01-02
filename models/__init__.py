@@ -15,6 +15,8 @@ from .evaluate.mtld_evaluator import MTLDEvaluator
 from .evaluate.reward_evaluator import RewardEvaluator
 from .evaluate.uni_evaluator import UniEvaluator
 
+from .strategy.travserse_strategy import TraverseStrategy
+
 
 __all__ = [
     # llm models
@@ -34,4 +36,6 @@ __all__ = [
     "MTLDEvaluator",
     "RewardEvaluator",
     "UniEvaluator",
+    # strategy models
+    "TraverseStrategy",
 ]

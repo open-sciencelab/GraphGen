@@ -1,7 +1,7 @@
 import asyncio
 from collections import defaultdict
 
-from models import OpenAIModel, NetworkXStorage
+from models import OpenAIModel, NetworkXStorage, TraverseStrategy
 from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
 from utils import detect_main_language, compute_content_hash, logger
 from tqdm.asyncio import tqdm as tqdm_async
@@ -59,7 +59,7 @@ def _get_level_2_edges(
 async def traverse_graph_by_edge(
     llm_client: OpenAIModel,
     graph_storage: NetworkXStorage,
-    top_extra_edges: int = 5,
+    traverse_strategy: TraverseStrategy,
     max_concurrent: int = 1000
 ) -> dict:
     """
@@ -67,7 +67,7 @@ async def traverse_graph_by_edge(
 
     :param llm_client: llm client
     :param graph_storage: graph storage instance
-    :param top_extra_edges: top extra edges
+    :param traverse_strategy: traverse strategy
     :param max_concurrent: max concurrent
     :return: question and answer
     """
@@ -82,11 +82,11 @@ async def traverse_graph_by_edge(
             f"{_process_node['node_id']}: {_process_node['description']}" for _process_node in _process_nodes
         ]
         relations = [
-            f"{_process_edge[0]} -> {_process_edge[1]}: {_process_edge[2]['description']}" for _process_edge in _process_edges
+            f"{_process_edge[0]} -- {_process_edge[1]}: {_process_edge[2]['description']}" for _process_edge in _process_edges
         ]
 
-        entities_str = "\n".join([f"{i + 1}. {entity}" for i, entity in enumerate(entities)])
-        relations_str = "\n".join([f"{i + 1}. {relation}" for i, relation in enumerate(relations)])
+        entities_str = "\n".join([f"{index + 1}. {entity}" for index, entity in enumerate(entities)])
+        relations_str = "\n".join([f"{index + 1}. {relation}" for index, relation in enumerate(relations)])
 
         language = "Chinese" if detect_main_language(entities_str + relations_str) == "zh" else "English"
         prompt = ANSWER_REPHRASING_PROMPT[language]['TEMPLATE'].format(
@@ -129,6 +129,39 @@ async def traverse_graph_by_edge(
     edges = list(await graph_storage.get_all_edges())
     nodes = await graph_storage.get_all_nodes()
 
+    processing_batches = await get_batches_with_strategy(
+        edges,
+        graph_storage,
+        traverse_strategy
+    )
+
+    # isolate nodes
+    visited_nodes = set()
+    for _process_nodes, _process_edges in processing_batches:
+        for node in _process_nodes:
+            visited_nodes.add(node["node_id"])
+    for node in nodes:
+        if node[0] not in visited_nodes:
+            _process_nodes = [await _get_node_info(node[0], graph_storage)]
+            processing_batches.append((_process_nodes, []))
+
+    for result in tqdm_async(asyncio.as_completed(
+        [_process_single_batch(batch) for batch in processing_batches]
+    ), total=len(processing_batches), desc="Processing batches"):
+        try:
+            results.update(await result)
+        except Exception as e:
+            logger.error("Error occurred while processing batches: %s", e)
+
+    return results
+
+# 边删除聚类
+async def get_batches_with_strategy(
+    edges: list,
+    graph_storage: NetworkXStorage,
+    traverse_strategy: TraverseStrategy,
+):
+    top_extra_edges = traverse_strategy.max_width
     # 按照loss从大到小排序
     edges = sorted(edges, key=lambda x: x[2]["loss"], reverse=True)
 
@@ -169,23 +202,4 @@ async def traverse_graph_by_edge(
             _process_edges.append(_edge)
 
         processing_batches.append((_process_nodes, _process_edges))
-
-    # isolate nodes
-    visited_nodes = set()
-    for _process_nodes, _process_edges in processing_batches:
-        for node in _process_nodes:
-            visited_nodes.add(node["node_id"])
-    for node in nodes:
-        if node[0] not in visited_nodes:
-            _process_nodes = [await _get_node_info(node[0], graph_storage)]
-            processing_batches.append((_process_nodes, []))
-
-    for result in tqdm_async(asyncio.as_completed(
-        [_process_single_batch(batch) for batch in processing_batches]
-    ), total=len(processing_batches), desc="Processing batches"):
-        try:
-            results.update(await result)
-        except Exception as e:
-            logger.error("Error occurred while processing batches: %s", e)
-
-    return results
+    return processing_batches

@@ -6,7 +6,7 @@ import asyncio
 from tqdm.asyncio import tqdm as tqdm_async
 
 from .operators import *
-from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch, Tokenizer
+from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch, Tokenizer, TraverseStrategy
 from typing import List, cast, Union
 
 from dataclasses import dataclass
@@ -48,6 +48,9 @@ class GraphGen:
     # web search
     if_web_search: bool = False
     wiki_client: WikiSearch = WikiSearch()
+
+    # traverse strategy
+    traverse_strategy: TraverseStrategy = TraverseStrategy()
 
     async def async_split_chunks(self, data: Union[List[list], List[dict]], data_type: str) -> dict:
         # TODO： 是否进行指代消解
@@ -168,6 +171,6 @@ class GraphGen:
         loop.run_until_complete(self.async_traverse())
 
     async def async_traverse(self):
-        results = await traverse_graph_by_edge(self.teacher_llm_client, self.graph_storage)
+        results = await traverse_graph_by_edge(self.teacher_llm_client, self.graph_storage, self.traverse_strategy)
         await self.qa_storage.upsert(results)
         await self.qa_storage.index_done_callback()

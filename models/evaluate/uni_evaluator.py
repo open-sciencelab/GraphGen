@@ -1,40 +1,48 @@
 # https://github.com/maszhongming/UniEval/tree/main
+
 import torch
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from tqdm import tqdm
 from .base_evaluator import BaseEvaluator
 from dataclasses import dataclass, field
 from utils import create_event_loop
 from models.text.text_pair import TextPair
 import asyncio
 from tqdm.asyncio import tqdm as tqdm_async
+from utils import logger
 
 
 @dataclass
 class UniEvaluator(BaseEvaluator):
     model_name: str = "MingZhong/unieval-sum"
     dimensions: list = field(default_factory=lambda: ['naturalness', 'coherence', 'understandability'])
+    current_device_id: int = 0
 
     def __post_init__(self):
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.device_ids = range(torch.cuda.device_count())
+        self.num_gpus = len(self.device_ids)
 
-        self.model.eval()
-        self.model.to("cuda")
+        if torch.cuda.device_count() > 1:
+            logger.info(f"Using {torch.cuda.device_count()} GPUs")
+
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.models = []
+        for device_id in self.device_ids:
+            self.models.append(AutoModelForSeq2SeqLM.from_pretrained(self.model_name).cuda(device_id))
+            self.models[-1].eval()
 
         self.softmax = nn.Softmax(dim=1)
 
         self.pos_id = self.tokenizer("Yes")["input_ids"][0]
         self.neg_id = self.tokenizer("No")["input_ids"][0]
     
-    def evaluate(self, pairs: list[TextPair], dimension: str) -> float:
+    def evaluate(self, pairs: list[TextPair], dimension: str) -> list[float]:
         """
         Evaluate the text and return a score.
         """
         return create_event_loop().run_until_complete(self.async_evaluate(pairs, dimension))
 
-    async def async_evaluate(self, pairs: list[TextPair], dimension: str) -> float:
+    async def async_evaluate(self, pairs: list[TextPair], dimension: str) -> list[float]:
         semaphore = asyncio.Semaphore(self.max_concurrent)
         
         async def evaluate_with_semaphore(pair):
@@ -73,39 +81,43 @@ class UniEvaluator(BaseEvaluator):
 
         tgt = "No"
 
-        with torch.no_grad():
-            encoded_src = self.tokenizer(
-                text,
-                # max_length=self.max_length,
-                truncation=True,
-                padding=True,
-                return_tensors='pt'
-            )
-            encoded_tgt = self.tokenizer(
-                tgt,
-                # max_length=self.max_length,
-                truncation=True,
-                padding=True,
-                return_tensors='pt'
-            )
+        encoded_src = self.tokenizer(
+            text,
+            # max_length=self.max_length,
+            # truncation=True,
+            padding=True,
+            return_tensors='pt'
+        )
+        encoded_tgt = self.tokenizer(
+            tgt,
+            # max_length=self.max_length,
+            # truncation=True,
+            padding=True,
+            return_tensors='pt'
+        )
 
-            src_tokens = encoded_src['input_ids'].to("cuda")
-            src_mask = encoded_src['attention_mask'].to("cuda")
+        current_device_id = self.current_device_id
+        self.current_device_id = (self.current_device_id + 1) % self.num_gpus
 
-            tgt_tokens = encoded_tgt['input_ids'].to("cuda")[:, 0].unsqueeze(-1)
+        model = self.models[current_device_id]
 
-            output = self.model(
-                input_ids=src_tokens,
-                attention_mask=src_mask,
-                labels=tgt_tokens
-            )
+        src_tokens = encoded_src['input_ids'].to(model.device)
+        src_mask = encoded_src['attention_mask'].to(model.device)
 
-            logits = output.logits.view(-1, self.model.config.vocab_size)
+        tgt_tokens = encoded_tgt['input_ids'].to(model.device)[:, 0].unsqueeze(-1)
 
-            pos_score = self.softmax(logits)[:, self.pos_id]  # Yes
-            neg_score = self.softmax(logits)[:, self.neg_id]
+        output = model(
+            input_ids=src_tokens,
+            attention_mask=src_mask,
+            labels=tgt_tokens
+        )
 
-            score = pos_score / (pos_score + neg_score)
+        logits = output.logits.view(-1, model.config.vocab_size)
+
+        pos_score = self.softmax(logits)[:, self.pos_id]  # Yes
+        neg_score = self.softmax(logits)[:, self.neg_id]
+
+        score = pos_score / (pos_score + neg_score)
 
         return score.item()
     

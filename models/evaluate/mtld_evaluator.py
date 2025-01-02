@@ -47,7 +47,8 @@ class MTLDEvaluator(BaseEvaluator):
         # 取平均值
         return (forward_factors + backward_factors) / 2
 
-    def _compute_factors(self, tokens: list, threshold: float) -> float:
+    @staticmethod
+    def _compute_factors(tokens: list, threshold: float) -> float:
         factors = 0
         current_segment = []
         unique_words = set()

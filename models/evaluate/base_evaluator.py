@@ -9,13 +9,13 @@ from models.text.text_pair import TextPair
 class BaseEvaluator:
     max_concurrent: int = 1000
 
-    def evaluate(self, pairs: list[TextPair]) -> float:
+    def evaluate(self, pairs: list[TextPair]) -> list[float]:
         """
         Evaluate the text and return a score.
         """
         return create_event_loop().run_until_complete(self.async_evaluate(pairs))
 
-    async def async_evaluate(self, pairs: list[TextPair]) -> float:
+    async def async_evaluate(self, pairs: list[TextPair]) -> list[float]:
         semaphore = asyncio.Semaphore(self.max_concurrent)
         
         async def evaluate_with_semaphore(pair):

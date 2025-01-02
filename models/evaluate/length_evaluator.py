@@ -15,8 +15,8 @@ class LengthEvaluator(BaseEvaluator):
 
     async def evaluate_single(self, pair: TextPair) -> float:
         loop = create_event_loop()
-        return await loop.run_in_executor(None, self._calcualte_length, pair.answer)
+        return await loop.run_in_executor(None, self._calculate_length, pair.answer)
     
-    def _calcualte_length(self, text: str) -> float:
+    def _calculate_length(self, text: str) -> float:
         tokens = self.tokenizer.encode_string(text)
         return len(tokens)

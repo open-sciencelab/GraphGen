@@ -7,7 +7,7 @@ from models.text.text_pair import TextPair
 
 @dataclass
 class BaseEvaluator:
-    max_concurrent: int = 1000
+    max_concurrent: int = 100
 
     def evaluate(self, pairs: list[TextPair]) -> list[float]:
         """

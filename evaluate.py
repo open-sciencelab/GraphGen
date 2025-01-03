@@ -12,6 +12,58 @@ set_logger(os.path.join(sys_path, "cache", "logs", "evaluate.log"))
 
 load_dotenv()
 
+def evaluate_length(corpus):
+    length_evaluator = LengthEvaluator(
+        tokenizer_name=os.getenv('TOKENIZER_NAME')
+    )
+    logger.info("Length evaluator loaded")
+    scores = length_evaluator.get_average_score(corpus)
+    logger.info(f"Length scores: {scores}")
+    return scores
+
+def evaluate_mtld(corpus):
+    mtld_evaluator = MTLDEvaluator()
+    logger.info("MTLD evaluator loaded")
+    scores = mtld_evaluator.get_average_score(corpus)
+    logger.info(f"MTLD scores: {scores}")
+    return scores
+
+def evaluate_reward(corpus, reward_model_names):
+    scores = []
+    for reward_name in reward_model_names:
+        reward_evaluator = RewardEvaluator(
+            reward_name=reward_name
+        )
+        logger.info(f"Loaded reward model: {reward_name}")
+        scores.append({
+            'reward_name': reward_name,
+            'score': reward_evaluator.get_average_score(corpus)
+        })
+        logger.info(f"{reward_name} scores: {scores[-1]['score']}")
+        del reward_evaluator
+        clean_gpu_cache()
+    return scores
+
+def evaluate_uni(corpus, uni_model_name):
+    uni_evaluator = UniEvaluator(
+        model_name=uni_model_name
+    )
+    logger.info(f"Uni evaluator loaded with model {uni_model_name}")
+    naturalness_scores = uni_evaluator.get_average_score(corpus, 'naturalness')
+    logger.info(f"Uni naturalness scores: {naturalness_scores}")
+    coherence_scores = uni_evaluator.get_average_score(corpus, 'coherence')
+    logger.info(f"Uni coherence scores: {coherence_scores}")
+    understandability_scores = uni_evaluator.get_average_score(corpus, 'understandability')
+    logger.info(f"Uni understandability scores: {understandability_scores}")
+    del uni_evaluator
+    clean_gpu_cache()
+    return naturalness_scores, coherence_scores, understandability_scores
+
+
+def clean_gpu_cache():
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -33,27 +85,6 @@ if __name__ == '__main__':
 
     reward_models = args.reward.split(',')
 
-    logger.info("Evaluators loading")
-
-    length_evaluator = LengthEvaluator(
-        tokenizer_name=args.tokenizer
-    )
-    mtld_evaluator = MTLDEvaluator()
-
-    reward_evaluators = []
-    for reward_name in reward_models:
-        reward_evaluators.append({
-            'reward_name': reward_name.split('/')[-1],
-            'evaluator': RewardEvaluator(
-                reward_name=reward_name
-            )
-        })
-
-    uni_evaluator = UniEvaluator(
-        model_name=args.uni
-    )
-
-    logger.info("Evaluators loaded")
 
     results = []
 
@@ -67,35 +98,20 @@ if __name__ == '__main__':
                 answer=data[key]['answer']
             ) for key in data]
 
-            length_scores = length_evaluator.get_average_score(data)
-            logger.info(f"Length scores: {length_scores}")
+            length_scores = evaluate_length(data)
 
-            mtld_scores = mtld_evaluator.get_average_score(data)
-            logger.info(f"MTLD scores: {mtld_scores}")
+            mtld_scores = evaluate_mtld(data)
 
-            reward_scores = []
-            for reward_evaluator in reward_evaluators:
-                reward_scores.append({
-                    'reward_name': reward_evaluator['reward_name'],
-                    'score': reward_evaluator['evaluator'].get_average_score(data)
-                })
-                logger.info(f"{reward_evaluator['reward_name']} scores: {reward_scores[-1]['score']}")
+            reward_scores = evaluate_reward(data, reward_models)
 
-            uni_naturelness_scores = uni_evaluator.get_average_score(data, 'naturalness')
-            logger.info(f"Uni naturalness scores: {uni_naturelness_scores}")
-
-            uni_coherence_scores = uni_evaluator.get_average_score(data, 'coherence')
-            logger.info(f"Uni coherence scores: {uni_coherence_scores}")
-
-            uni_understandability_scores = uni_evaluator.get_average_score(data, 'understandability')
-            logger.info(f"Uni understandability scores: {uni_understandability_scores}")
+            uni_naturalness_scores, uni_coherence_scores, uni_understandability_scores = evaluate_uni(data, args.uni)
 
             result = {
                 'file': file,
                 'number': len(data),
                 'length': length_scores,
                 'mtld': mtld_scores,
-                'uni_naturalness': uni_naturelness_scores,
+                'uni_naturalness': uni_naturalness_scores,
                 'uni_coherence': uni_coherence_scores,
                 'uni_understandability': uni_understandability_scores
             }
@@ -104,11 +120,7 @@ if __name__ == '__main__':
 
             results.append(result)
 
-            # 清理 GPU 缓存
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
 
-        
     results = pd.DataFrame(results)
         
     results.to_csv(os.path.join(args.output, 'evaluation.csv'), index=False)

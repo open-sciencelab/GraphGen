@@ -15,6 +15,7 @@ from tqdm.asyncio import tqdm as tqdm_async
 class UniEvaluator(BaseEvaluator):
     model_name: str = "MingZhong/unieval-sum"
     dimensions: list = field(default_factory=lambda: ['naturalness', 'coherence', 'understandability'])
+    max_length: int = 1024
 
     def __post_init__(self):
         self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
@@ -75,14 +76,14 @@ class UniEvaluator(BaseEvaluator):
         with torch.no_grad():
             encoded_src = self.tokenizer(
                 text,
-                max_length=2048,
+                max_length=self.max_length,
                 truncation=True,
                 padding=True,
                 return_tensors='pt'
             )
             encoded_tgt = self.tokenizer(
                 tgt,
-                max_length=2048,
+                max_length=self.max_length,
                 truncation=True,
                 padding=True,
                 return_tensors='pt'

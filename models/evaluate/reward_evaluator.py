@@ -9,6 +9,7 @@ from utils import logger, create_event_loop
 @dataclass
 class RewardEvaluator(BaseEvaluator):
     reward_name: str = "OpenAssistant/reward-model-deberta-v3-large-v2"
+    max_length: int = 1024
 
     def __post_init__(self):
         self.rank_model = AutoModelForSequenceClassification.from_pretrained(self.reward_name)
@@ -27,7 +28,7 @@ class RewardEvaluator(BaseEvaluator):
         question, answer = pair.question, pair.answer
 
         # concatenate the question and answer
-        inputs = self.tokenizer(question, answer, return_tensors="pt", max_length=2048)
+        inputs = self.tokenizer(question, answer, return_tensors="pt", max_length=self.max_length, truncation=True)
         inputs = {k: v.to("cuda") for k, v in inputs.items()}
 
         score = self.rank_model(**inputs).logits[0].item()

@@ -1,59 +1,10 @@
 import asyncio
-from collections import defaultdict
 
 from models import OpenAIModel, NetworkXStorage, TraverseStrategy
 from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
 from utils import detect_main_language, compute_content_hash, logger
 from tqdm.asyncio import tqdm as tqdm_async
-
-
-async def _get_node_info(
-    node_id: str,
-    graph_storage: NetworkXStorage,
-)-> dict:
-    """
-    Get node info
-
-    :param node_id: node id
-    :param graph_storage: graph storage instance
-    :return: node info
-    """
-    node_data = await graph_storage.get_node(node_id)
-    return {
-        "node_id": node_id,
-        **node_data
-    }
-
-
-def _get_level_2_edges(
-    adj_list: dict,
-    edges: list,
-    node_id: str,
-    top_extra_edges: int
-) -> list:
-    """
-    Get level 2 edges
-
-    :param adj_list: adjacency list
-    :param edges: find edges
-    :param node_id: source node id
-    :param top_extra_edges: top extra edges
-    :return: level 2 edges
-    """
-    level_2_edges = []
-    for edge_id in adj_list[node_id]:
-        edge = edges[edge_id]
-        if "visited" in edge[2] and edge[2]["visited"]:
-            continue
-        if edge[0] == node_id:
-            level_2_edges.append(edge)
-            edge[2]["visited"] = True
-        elif edge[1] == node_id:
-            level_2_edges.append((edge[1], edge[0], edge[2]))
-            edge[2]["visited"] = True
-        if len(level_2_edges) >= top_extra_edges:
-            break
-    return level_2_edges
+from .split_graph import get_batches_with_strategy
 
 
 async def traverse_graph_by_edge(
@@ -130,20 +81,11 @@ async def traverse_graph_by_edge(
     nodes = await graph_storage.get_all_nodes()
 
     processing_batches = await get_batches_with_strategy(
+        nodes,
         edges,
         graph_storage,
         traverse_strategy
     )
-
-    # isolate nodes
-    visited_nodes = set()
-    for _process_nodes, _process_edges in processing_batches:
-        for node in _process_nodes:
-            visited_nodes.add(node["node_id"])
-    for node in nodes:
-        if node[0] not in visited_nodes:
-            _process_nodes = [await _get_node_info(node[0], graph_storage)]
-            processing_batches.append((_process_nodes, []))
 
     for result in tqdm_async(asyncio.as_completed(
         [_process_single_batch(batch) for batch in processing_batches]
@@ -154,52 +96,3 @@ async def traverse_graph_by_edge(
             logger.error("Error occurred while processing batches: %s", e)
 
     return results
-
-# 边删除聚类
-async def get_batches_with_strategy(
-    edges: list,
-    graph_storage: NetworkXStorage,
-    traverse_strategy: TraverseStrategy,
-):
-    top_extra_edges = traverse_strategy.max_width
-    # 按照loss从大到小排序
-    edges = sorted(edges, key=lambda x: x[2]["loss"], reverse=True)
-
-    # 构建临接矩阵
-    adj_list = defaultdict(list)
-    processing_batches = []
-    node_cache = {}
-
-    for i, (src, tgt, data) in enumerate(edges):
-        adj_list[src].append(i)
-        adj_list[tgt].append(i)
-
-    async def get_cached_node_info(node_id):
-        if node_id not in node_cache:
-            node_cache[node_id] = await _get_node_info(node_id, graph_storage)
-        return node_cache[node_id]
-
-    for edge in tqdm_async(edges, desc="Preparing batches"):
-        if "visited" in edge[2] and edge[2]["visited"]:
-            continue
-
-        edge[2]["visited"] = True
-
-        _process_nodes = []
-        _process_edges = []
-
-        src_id = edge[0]
-        tgt_id = edge[1]
-
-        _process_nodes.extend([await get_cached_node_info(src_id), await get_cached_node_info(tgt_id)])
-        _process_edges.append(edge)
-
-        level_2_edges = _get_level_2_edges(adj_list, edges, tgt_id, top_extra_edges)
-        assert len(level_2_edges) <= top_extra_edges
-
-        for _edge in level_2_edges:
-            _process_nodes.append(await get_cached_node_info(_edge[1]))
-            _process_edges.append(_edge)
-
-        processing_batches.append((_process_nodes, _process_edges))
-    return processing_batches

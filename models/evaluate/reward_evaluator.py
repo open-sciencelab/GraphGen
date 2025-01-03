@@ -27,7 +27,7 @@ class RewardEvaluator(BaseEvaluator):
         question, answer = pair.question, pair.answer
 
         # concatenate the question and answer
-        inputs = self.tokenizer(question, answer, return_tensors="pt")
+        inputs = self.tokenizer(question, answer, return_tensors="pt", max_length=2048)
         inputs = {k: v.to("cuda") for k, v in inputs.items()}
 
         score = self.rank_model(**inputs).logits[0].item()

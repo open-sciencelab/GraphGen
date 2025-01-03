@@ -75,14 +75,14 @@ class UniEvaluator(BaseEvaluator):
         with torch.no_grad():
             encoded_src = self.tokenizer(
                 text,
-                # max_length=self.max_length,
+                max_length=2048,
                 truncation=True,
                 padding=True,
                 return_tensors='pt'
             )
             encoded_tgt = self.tokenizer(
                 tgt,
-                # max_length=self.max_length,
+                max_length=2048,
                 truncation=True,
                 padding=True,
                 return_tensors='pt'

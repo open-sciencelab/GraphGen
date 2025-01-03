@@ -22,3 +22,9 @@ def set_logger(log_file: str, log_level: int = logging.INFO, if_stream: bool = T
         logger.addHandler(file_handler)
         if if_stream:
             logger.addHandler(stream_handler)
+
+
+def parse_log(log_file: str):
+    with open(log_file, "r") as f:
+        lines = f.readlines()
+    return lines

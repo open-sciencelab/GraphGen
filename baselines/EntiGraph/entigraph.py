@@ -1,15 +1,17 @@
 # https://arxiv.org/abs/2409.07431
 # https://github.com/zitongyang/synthetic_continued_pretraining
 
+import os
 import json
 import asyncio
+import argparse
+from hashlib import md5
 
-from inference.devapi import gptqa
-from tasks.baseline_task import BaselineTask
+from .inference.devapi import gptqa
+from .tasks.baseline_task import BaselineTask
 import random
 from tqdm.asyncio import tqdm as tqdm_async
 
-from hashlib import md5
 
 def compute_content_hash(content, prefix: str = ""):
     return prefix + md5(content.encode()).hexdigest()
@@ -85,10 +87,12 @@ def _post_process_synthetic_data(data):
     return qas
 
 
-async def generate_synthetic_data_for_document(model_name: str):
+async def generate_synthetic_data_for_document(input_file, data_type):
     random.seed(42)
 
-    task = BaselineTask()
+    model_name = os.getenv("TEACHER_MODEL")
+
+    task = BaselineTask(input_file, data_type)
 
     async def process_single_document(doc):
         output = [[]]
@@ -169,13 +173,31 @@ async def generate_synthetic_data_for_document(model_name: str):
         except Exception as e:
             print(f"Error: {e}")
 
-    with open("../../cache/data/entigraph.json", "w") as f:
-        json.dump(qa_sft_results, f, indent=4, ensure_ascii=False)
+    return qa_sft_results
 
 
 
 if __name__ == '__main__':
-    model_name = "gpt-4o-mini"
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_file',
+                        help='Raw context jsonl path.',
+                        default='resources/examples/chunked_demo.json',
+                        type=str)
+    parser.add_argument('--data_type',
+                        help='Data type of input file. (Raw context or chunked context)',
+                        choices=['raw', 'chunked'],
+                        default='raw',
+                        type=str)
+    parser.add_argument('--output_file',
+                        help='Output file path.',
+                        default='cache/data/entigraph.json',
+                        type=str)
+
+    args = parser.parse_args()
 
     loop = asyncio.get_event_loop()
-    loop.run_until_complete(generate_synthetic_data_for_document(model_name))
+    results = loop.run_until_complete(generate_synthetic_data_for_document(args.input_file, args.data_type))
+
+    # Save results
+    with open(args.output_file, "w") as f:
+        json.dump(results, f, indent=4, ensure_ascii=False)

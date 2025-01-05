@@ -17,9 +17,14 @@ class BaselineTask(Task):
     llama_cot_prompt = QUALITY_FEW_SHOT_COT_PROMPT
 
     @staticmethod
-    def _load_split():
-        file_path = '../../resources/examples/chunked_demo.json'
-        data = json.load(open(file_path, 'r'))
+    def _load_split(input_file: str, data_type: str):
+        if data_type == 'raw':
+            with open(input_file, "r") as f:
+                data = [json.loads(line) for line in f]
+                data = [[chunk] for chunk in data]
+        elif data_type == 'chunked':
+            with open(input_file, "r") as f:
+                data = json.load(f)
 
         documents = []
         for doc in data:
@@ -44,8 +49,8 @@ class BaselineTask(Task):
         self.documents = list(deuped_documents.values())
 
 
-    def __init__(self):
-        self._data = self._load_split()
+    def __init__(self, input_file: str, data_type: str):
+        self._data = self._load_split(input_file, data_type)
         self._create_documents()
         self._dedup()
 

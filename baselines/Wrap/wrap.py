@@ -1,10 +1,16 @@
 # https://arxiv.org/abs/2401.16380
 
-from dataclasses import dataclass
+import os
+import json
+import argparse
+from dotenv import load_dotenv
 from models import OpenAIModel
+
+from dataclasses import dataclass
 from typing import List
 from utils import create_event_loop, compute_content_hash
 from tqdm.asyncio import tqdm as tqdm_async
+
 
 PROMPT_TEMPLATE = '''A chat between a curious user and an artificial intelligence assistant.
 The assistant gives helpful, detailed, and polite answers to the questions.
@@ -67,10 +73,22 @@ class Wrap:
         return results
 
 if __name__ == "__main__":
-    import os
-    import json
-    from dotenv import load_dotenv
-    from models import OpenAIModel
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_file',
+                        help='Raw context jsonl path.',
+                        default='resources/examples/chunked_demo.json',
+                        type=str)
+    parser.add_argument('--data_type',
+                        help='Data type of input file. (Raw context or chunked context)',
+                        choices=['raw', 'chunked'],
+                        default='raw',
+                        type=str)
+    parser.add_argument('--output_file',
+                        help='Output file path.',
+                        default='cache/data/wrap.json',
+                        type=str)
+
+    args = parser.parse_args()
 
     load_dotenv()
 
@@ -82,11 +100,16 @@ if __name__ == "__main__":
 
     wrap = Wrap(llm_client=llm_client)
 
-    with open("../../resources/examples/chunked_demo.json", "r") as f:
-        data = json.load(f)
+    if args.data_type == 'raw':
+        with open(args.input_file, "r") as f:
+            data = [json.loads(line) for line in f]
+            data = [[chunk] for chunk in data]
+    elif args.data_type == 'chunked':
+        with open(args.input_file, "r") as f:
+            data = json.load(f)
 
     results = wrap.generate(data)
 
     # Save results
-    with open("../../cache/data/wrap.json", "w") as f:
+    with open(args.output_file, "w") as f:
         json.dump(results, f, indent=4, ensure_ascii=False)

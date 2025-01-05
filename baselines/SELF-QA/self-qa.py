@@ -1,5 +1,9 @@
 # https://arxiv.org/abs/2305.11952
 
+import os
+import json
+from dotenv import load_dotenv
+import argparse
 import asyncio
 from dataclasses import dataclass
 from models import OpenAIModel
@@ -84,10 +88,22 @@ class SelfQA:
         return results
 
 if __name__ == "__main__":
-    import os
-    import json
-    from dotenv import load_dotenv
-    from models import OpenAIModel
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--input_file',
+                        help='Raw context jsonl path.',
+                        default='resources/examples/chunked_demo.json',
+                        type=str)
+    parser.add_argument('--data_type',
+                        help='Data type of input file. (Raw context or chunked context)',
+                        choices=['raw', 'chunked'],
+                        default='raw',
+                        type=str)
+    parser.add_argument('--output_file',
+                        help='Output file path.',
+                        default='cache/data/self-qa.json',
+                        type=str)
+
+    args = parser.parse_args()
 
     load_dotenv()
 
@@ -99,11 +115,16 @@ if __name__ == "__main__":
 
     self_qa = SelfQA(llm_client=llm_client)
 
-    with open("../../resources/examples/chunked_demo.json", "r") as f:
-        data = json.load(f)
+    if args.data_type == 'raw':
+        with open(args.input_file, "r") as f:
+            data = [json.loads(line) for line in f]
+            data = [[chunk] for chunk in data]
+    elif args.data_type == 'chunked':
+        with open(args.input_file, "r") as f:
+            data = json.load(f)
 
     results = self_qa.generate(data)
 
     # Save results
-    with open("../../cache/data/self_qa_results.json", "w") as f:
+    with open(args.output_file, "w") as f:
         json.dump(results, f, indent=4, ensure_ascii=False)

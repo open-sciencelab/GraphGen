@@ -46,6 +46,7 @@ def _post_process(content: str) -> list:
 @dataclass
 class Wrap:
     llm_client: OpenAIModel = None
+    max_concurrent: int = 1000
 
     def generate(self, docs: List[List[dict]]) -> List[dict]:
         loop = create_event_loop()
@@ -53,13 +54,17 @@ class Wrap:
 
     async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
         results = []
+        semaphore = asyncio.Semaphore(self.max_concurrent)
+
+        async def process_chunk(content: str):
+            async with semaphore:
+                prompt = PROMPT_TEMPLATE.format(doc=content)
+                return await self.llm_client.generate_answer(prompt)
 
         tasks = []
         for doc in docs:
             for chunk in doc:
-                content = chunk['content']
-                prompt = PROMPT_TEMPLATE.format(doc=content)
-                tasks.append(self.llm_client.generate_answer(prompt))
+                tasks.append(process_chunk(chunk['content']))
 
         for result in tqdm_async(await asyncio.gather(*tasks), desc="Generating using Wrap"):
             qas = _post_process(result)

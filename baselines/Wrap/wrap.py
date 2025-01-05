@@ -66,15 +66,18 @@ class Wrap:
             for chunk in doc:
                 tasks.append(process_chunk(chunk['content']))
 
-        for result in tqdm_async(await asyncio.gather(*tasks), desc="Generating using Wrap"):
-            qas = _post_process(result)
-            for qa in qas:
-                results.append({
-                    compute_content_hash(qa[0]): {
-                        'question': qa[0],
-                        'answer': qa[1]
-                    }
-                })
+        for result in tqdm_async(asyncio.as_completed(tasks), total=len(tasks), desc="Generating using Wrap"):
+            try:
+                qas = _post_process(await result)
+                for qa in qas:
+                    results.append({
+                        compute_content_hash(qa[0]): {
+                            'question': qa[0],
+                            'answer': qa[1]
+                        }
+                    })
+            except Exception as e:
+                print(f"Error: {e}")
         return results
 
 

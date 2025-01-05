@@ -3,6 +3,7 @@ import os
 import json
 from dotenv import load_dotenv
 import argparse
+import asyncio
 
 from dataclasses import dataclass
 from models import OpenAIModel
@@ -51,6 +52,7 @@ def _post_process(content: str) -> tuple:
 @dataclass
 class Genie:
     llm_client: OpenAIModel = None
+    max_concurrent: int = 1000
 
     def generate(self, docs: List[List[dict]]) -> List[dict]:
         loop = create_event_loop()
@@ -58,22 +60,29 @@ class Genie:
 
     async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
         results = []
-        for doc in tqdm_async(docs, desc="Generating using Genie"):
-            for chunk in doc:
-                content = chunk['content']
+        semaphore = asyncio.Semaphore(self.max_concurrent)
+
+        async def process_chunk(content: str):
+            async with semaphore:
                 prompt = PROMPT_TEMPLATE.format(doc=content)
-                try:
-                    result = await self.llm_client.generate_answer(prompt)
-                    question, answer = _post_process(result)
-                    results.append({
-                        compute_content_hash(question): {
-                            'question': question,
-                            'answer': content
-                        }
-                    })
-                except Exception as e:
-                    print(f"Error: {e}")
-                    continue
+                return await self.llm_client.generate_answer(prompt)
+
+        tasks = []
+        for doc in docs:
+            for chunk in doc:
+                tasks.append(process_chunk(chunk['content']))
+
+        for result in tqdm_async(asyncio.as_completed(tasks), total=len(tasks), desc="Generating using Genie"):
+            try:
+                question, answer = _post_process(await result)
+                results.append({
+                    compute_content_hash(question): {
+                        'question': question,
+                        'answer': answer
+                    }
+                })
+            except Exception as e:
+                print(f"Error: {e}")
         return results
 
 if __name__ == "__main__":

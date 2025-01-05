@@ -53,6 +53,7 @@ def _post_process_answers(content: str) -> tuple:
 @dataclass
 class SelfQA:
     llm_client: OpenAIModel = None
+    max_concurrent: int = 1000
 
     def generate(self, docs: List[List[dict]]) -> List[dict]:
         loop = create_event_loop()
@@ -60,19 +61,20 @@ class SelfQA:
 
     async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
         results = []
-        for doc in tqdm_async(docs, desc="Generating using SelfQA"):
-            for chunk in doc:
-                content = chunk['content']
-                instruction_generation_prompt = INSTRUCTION_GENERATION_PROMPT.format(doc=content)
-                try:
-                    instruction_questions = await self.llm_client.generate_answer(instruction_generation_prompt)
-                    instruction_questions = _post_process_instructions(instruction_questions)
+        semaphore = asyncio.Semaphore(self.max_concurrent)
 
-                    for result in asyncio.as_completed([self.llm_client.generate_answer(READING_COMPREHENSION_PROMPT.format(doc=content, question=question)) for question in instruction_questions]):
+        async def process_chunk(content: str):
+            async with semaphore:
+                prompt = INSTRUCTION_GENERATION_PROMPT.format(doc=content)
+                response = await self.llm_client.generate_answer(prompt)
+                try:
+                    instruction_questions = _post_process_instructions(response)
+
+                    qas = []
+                    for qa in tqdm_async(asyncio.as_completed([self.llm_client.generate_answer(READING_COMPREHENSION_PROMPT.format(doc=content, question=question)) for question in instruction_questions]), total=len(instruction_questions), desc="Generating QAs"):
                         try:
-                            result = await result
-                            question, answer = _post_process_answers(result)
-                            results.append({
+                            question, answer = _post_process_answers(await qa)
+                            qas.append({
                                 compute_content_hash(question): {
                                     'question': question,
                                     'answer': answer
@@ -81,10 +83,22 @@ class SelfQA:
                         except Exception as e:
                             print(f"Error: {e}")
                             continue
+                    return qas
                 except Exception as e:
                     print(f"Error: {e}")
-                    continue
+                    return []
 
+        tasks = []
+        for doc in docs:
+            for chunk in doc:
+                tasks.append(process_chunk(chunk['content']))
+
+        for result in tqdm_async(asyncio.as_completed(tasks), total=len(tasks), desc="Generating using SelfQA"):
+            try:
+                qas = await result
+                results.extend(qas)
+            except Exception as e:
+                print(f"Error: {e}")
         return results
 
 if __name__ == "__main__":

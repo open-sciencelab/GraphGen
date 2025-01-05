@@ -5,6 +5,7 @@ import os
 import json
 from dotenv import load_dotenv
 import argparse
+import asyncio
 
 from dataclasses import dataclass
 from models import OpenAIModel
@@ -21,6 +22,7 @@ X:'''
 @dataclass
 class LongForm:
     llm_client: OpenAIModel = None
+    max_concurrent: int = 1000
 
     def generate(self, docs: List[List[dict]]) -> List[dict]:
         loop = create_event_loop()
@@ -28,21 +30,29 @@ class LongForm:
 
     async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
         results = []
-        for doc in tqdm_async(docs, desc="Generating using LongForm"):
+        semaphore = asyncio.Semaphore(self.max_concurrent)
+
+        async def process_chunk(content: str):
+            async with semaphore:
+                question = await self.llm_client.generate_answer(content)
+                return {
+                    compute_content_hash(question): {
+                        'question': question,
+                        'answer': content
+                    }
+                }
+
+        tasks = []
+        for doc in docs:
             for chunk in doc:
-                content = chunk['content']
-                prompt = PROMPT_TEMPLATE.format(doc=content)
-                try:
-                    question = await self.llm_client.generate_answer(prompt)
-                    results.append({
-                        compute_content_hash(question): {
-                            'question': question,
-                            'answer': content
-                        }
-                    })
-                except Exception as e:
-                    print(f"Error: {e}")
-                    continue
+                tasks.append(process_chunk(chunk['content']))
+
+        for result in tqdm_async(asyncio.as_completed(tasks), total=len(tasks), desc="Generating using LongForm"):
+            try:
+                qa = await result
+                results.append(qa)
+            except Exception as e:
+                print(f"Error: {e}")
         return results
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@
 import os
 import json
 import argparse
+import asyncio
 from dotenv import load_dotenv
 from models import OpenAIModel
 
@@ -28,7 +29,6 @@ Question: What was the revenue drop in the first quarter compared to the same pe
 '''
 
 def _post_process(content: str) -> list:
-    print(content)
     raw_qas = content.split('---')
     qas = []
     for item in raw_qas:
@@ -53,24 +53,25 @@ class Wrap:
 
     async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
         results = []
-        for doc in tqdm_async(docs, desc="Generating using Wrap"):
+
+        tasks = []
+        for doc in docs:
             for chunk in doc:
                 content = chunk['content']
                 prompt = PROMPT_TEMPLATE.format(doc=content)
-                try:
-                    result = await self.llm_client.generate_answer(prompt)
-                    qas = _post_process(result)
-                    for qa in qas:
-                        results.append({
-                            compute_content_hash(qa[0]): {
-                                'question': qa[0],
-                                'answer': qa[1]
-                            }
-                        })
-                except Exception as e:
-                    print(f"Error: {e}")
-                    continue
+                tasks.append(self.llm_client.generate_answer(prompt))
+
+        for result in tqdm_async(await asyncio.gather(*tasks), desc="Generating using Wrap"):
+            qas = _post_process(result)
+            for qa in qas:
+                results.append({
+                    compute_content_hash(qa[0]): {
+                        'question': qa[0],
+                        'answer': qa[1]
+                    }
+                })
         return results
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

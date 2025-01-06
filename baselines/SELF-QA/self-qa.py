@@ -53,7 +53,7 @@ def _post_process_answers(content: str) -> tuple:
 @dataclass
 class SelfQA:
     llm_client: OpenAIModel = None
-    max_concurrent: int = 1000
+    max_concurrent: int = 100
 
     def generate(self, docs: List[List[dict]]) -> List[dict]:
         loop = create_event_loop()

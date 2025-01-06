@@ -59,7 +59,7 @@ class Genie:
         return loop.run_until_complete(self.async_generate(docs))
 
     async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
-        results = []
+        final_results = {}
         semaphore = asyncio.Semaphore(self.max_concurrent)
 
         async def process_chunk(content: str):
@@ -75,12 +75,10 @@ class Genie:
         for result in tqdm_async(asyncio.as_completed(tasks), total=len(tasks), desc="Generating using Genie"):
             try:
                 question, answer = _post_process(await result)
-                results.append({
-                    compute_content_hash(question): {
-                        'question': question,
-                        'answer': answer
-                    }
-                })
+                final_results[compute_content_hash(question)] = {
+                    'question': question,
+                    'answer': answer
+                }
             except Exception as e:
                 print(f"Error: {e}")
         return results

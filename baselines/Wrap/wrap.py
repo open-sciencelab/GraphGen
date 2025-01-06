@@ -53,7 +53,7 @@ class Wrap:
         return loop.run_until_complete(self.async_generate(docs))
 
     async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
-        results = []
+        final_results = {}
         semaphore = asyncio.Semaphore(self.max_concurrent)
 
         async def process_chunk(content: str):
@@ -70,15 +70,13 @@ class Wrap:
             try:
                 qas = _post_process(await result)
                 for qa in qas:
-                    results.append({
-                        compute_content_hash(qa[0]): {
-                            'question': qa[0],
-                            'answer': qa[1]
-                        }
-                    })
+                    final_results[compute_content_hash(qa[0])] = {
+                        'question': qa[0],
+                        'answer': qa[1]
+                    }
             except Exception as e:
                 print(f"Error: {e}")
-        return results
+        return final_results
 
 
 if __name__ == "__main__":

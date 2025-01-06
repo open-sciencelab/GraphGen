@@ -90,83 +90,100 @@ def _post_process_synthetic_data(data):
 
 async def generate_synthetic_data_for_document(input_file, data_type):
     random.seed(42)
-
     model_name = os.getenv("TEACHER_MODEL")
-
     task = BaselineTask(input_file, data_type)
 
-    async def process_single_document(doc):
-        output = [[]]
+    max_concurrent = 1000
+    semaphore = asyncio.Semaphore(max_concurrent)
 
-        entities = await generate_entities(
-            doc.text,
-            task.openai_system_generate_entities,
-            model_name)
-        if not entities:
-            return []
-        output[0] = entities['entities']
-        output.append(entities['summary'])
-        entities = entities['entities']
+    async def generate_document_entities(doc):
+        async with semaphore:
+            entities = await generate_entities(
+                doc.text,
+                task.openai_system_generate_entities,
+                model_name)
+            if not entities:
+                return None
+            return {
+                'document': doc.text,
+                'entities': entities['entities'],
+                'summary': entities['summary']
+            }
 
-        pair_list = []
+    entities_list = []
+    for result in tqdm_async(
+            asyncio.as_completed([generate_document_entities(doc) for doc in task.documents]),
+            total=len(task.documents),
+            desc="Generating entities"
+    ):
+        result = await result
+        if result:
+            entities_list.append(result)
 
+    # iterate over triples of entities and generate relations
+    pair_list = []
+    for doc in entities_list:
+        entities = doc['entities']
         for i in range(len(entities)):
             for j in range(i + 1, len(entities)):
-                pair = (entities[i], entities[j])
+                pair = (doc['document'], entities[i], entities[j])
                 pair_list.append(pair)
 
-        for response in tqdm_async(
-            asyncio.as_completed([generate_two_entity_relations(doc.text, entity1, entity2, task.openai_system_generate_two_entity_relations, model_name) for entity1, entity2 in pair_list]),
-            total=len(pair_list),
-            desc="Generating synthetic data"
-        ):
-            try:
-                response = await response
-                if response:
-                    output.append(response)
-            except Exception as e:
-                print(f"Error: {e}")
+    async def process_two_entity_relations(pair):
+        async with semaphore:
+            document, entity1, entity2 = pair
+            response = await generate_two_entity_relations(
+                document, entity1, entity2,
+                task.openai_system_generate_two_entity_relations,
+                model_name)
+            return response
 
-        # # iterate over triples of entities and generate relations
-        # triple_list = []
-        # for i in range(len(entities)):
-        #     for j in range(i + 1, len(entities)):
-        #         for k in range(j + 1, len(entities)):
-        #             triple = (entities[i], entities[j], entities[k])
-        #             triple_list.append(triple)
-        # random.shuffle(triple_list)
-        # for entity1, entity2, entity3 in tqdm(triple_list):
-        #     response = await generate_three_entity_relations(
-        #         doc.text, entity1, entity2, entity3,
-        #         task.openai_system_generate_three_entity_relations,
-        #         model_name)
-        #     if response:
-        #         output.append(response)
-
-        corpus = output[1:]
-        return corpus
-
-    results = []
+    corpus= []
     for result in tqdm_async(
-            asyncio.as_completed([process_single_document(doc) for doc in task.documents]),
-            total=len(task.documents),
-            desc="Generating synthetic data"
+            asyncio.as_completed([process_two_entity_relations(pair) for pair in pair_list]),
+            total=len(pair_list),
+            desc="Generating two entity relations"
     ):
-        results.extend(await result)
+        corpus.append(await result)
 
+    # triple_list = []
+    # for doc in entities_list:
+    #     entities = doc['entities']
+    #     for i in range(len(entities)):
+    #         for j in range(i + 1, len(entities)):
+    #             for k in range(j + 1, len(entities)):
+    #                 triple = (doc['document'], entities[i], entities[j], entities[k])
+    #                 triple_list.append(triple)
+    #
+    # async def process_three_entity_relations(triple):
+    #     async with semaphore:
+    #         document, entity1, entity2, entity3 = triple
+    #         response = await generate_three_entity_relations(
+    #             document, entity1, entity2, entity3,
+    #             task.openai_system_generate_three_entity_relations,
+    #             model_name)
+    #         return response
+    #
+    # for result in tqdm_async(
+    #         asyncio.as_completed([process_three_entity_relations(triple) for triple in triple_list]),
+    #         total=len(triple_list),
+    #         desc="Generating three entity relations"
+    # ):
+    #     corpus.append(await result)
 
-    async def generate_qa_sft(content):
-        completion = await gptqa(content, model_name, task.openai_system_quality_qa_sft)
-        return completion
+    corpus = [doc['summary'] for doc in entities_list] + corpus
 
     qa_sft_results = {}
-    tasks = []
-    for corpus in results:
-        tasks.append(generate_qa_sft(corpus))
+
+    async def generate_qa_sft(content):
+        async with semaphore:
+            completion = await gptqa(content, model_name, task.openai_system_quality_qa_sft)
+            return completion
+
 
     for result in tqdm_async(
-            asyncio.as_completed(tasks),
-            total=len(tasks),
+            asyncio.as_completed([generate_qa_sft(content) for content in corpus]),
+            total=len(corpus),
             desc="Generating QA SFT"
     ):
         try:
@@ -176,7 +193,6 @@ async def generate_synthetic_data_for_document(input_file, data_type):
             print(f"Error: {e}")
 
     return qa_sft_results
-
 
 
 if __name__ == '__main__':

@@ -81,7 +81,7 @@ class Genie:
                 }
             except Exception as e:
                 print(f"Error: {e}")
-        return results
+        return final_results
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -12,9 +12,9 @@ set_logger(os.path.join(sys_path, "cache", "logs", "evaluate.log"))
 
 load_dotenv()
 
-def evaluate_length(corpus):
+def evaluate_length(corpus, tokenizer_name):
     length_evaluator = LengthEvaluator(
-        tokenizer_name=os.getenv('TOKENIZER_NAME')
+        tokenizer_name=tokenizer_name
     )
     logger.info("Length evaluator loaded")
     scores = length_evaluator.get_average_score(corpus)
@@ -98,7 +98,7 @@ if __name__ == '__main__':
                 answer=data[key]['answer']
             ) for key in data]
 
-            length_scores = evaluate_length(data)
+            length_scores = evaluate_length(data, args.tokenizer)
 
             mtld_scores = evaluate_mtld(data)
 

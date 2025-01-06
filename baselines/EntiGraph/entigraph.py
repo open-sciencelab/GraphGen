@@ -30,12 +30,13 @@ async def generate_entities(document_content: str,
             completion = await gptqa(prompt,
                                openai_model,
                                system_message,
-                               json_format=True)
+                               json_format=False)
+            completion = completion[completion.find("{"): completion.rfind("}") + 1]
             response = json.loads(completion)
             can_read_entities = response['entities']
+            return response
         except Exception as e:
             print(f"Failed to generate entities: {str(e)}")
-    return response
 
 async def generate_two_entity_relations(document_content: str,
                                   entity1: str,
@@ -101,6 +102,8 @@ async def generate_synthetic_data_for_document(input_file, data_type):
             doc.text,
             task.openai_system_generate_entities,
             model_name)
+        if not entities:
+            return []
         output[0] = entities['entities']
         output.append(entities['summary'])
         entities = entities['entities']
@@ -149,7 +152,7 @@ async def generate_synthetic_data_for_document(input_file, data_type):
             total=len(task.documents),
             desc="Generating synthetic data"
     ):
-        results.append(await result)
+        results.extend(await result)
 
 
     async def generate_qa_sft(content):
@@ -159,8 +162,7 @@ async def generate_synthetic_data_for_document(input_file, data_type):
     qa_sft_results = {}
     tasks = []
     for corpus in results:
-        for context in corpus:
-            tasks.append(generate_qa_sft(context))
+        tasks.append(generate_qa_sft(corpus))
 
     for result in tqdm_async(
             asyncio.as_completed(tasks),

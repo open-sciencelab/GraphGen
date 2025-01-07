@@ -1,9 +1,11 @@
+import asyncio
 import random
 
 from collections import defaultdict
 from models import NetworkXStorage, TraverseStrategy
 from tqdm.asyncio import tqdm as tqdm_async
-from utils import logger
+from utils import logger, create_event_loop
+
 
 async def _get_node_info(
     node_id: str,
@@ -22,8 +24,9 @@ async def _get_node_info(
         **node_data
     }
 
+
 def _get_level_n_edges_by_max_width(
-    adj_list: dict,
+    edge_adj_list: dict,
     edges: list,
     src_id: str,
     tgt_id: str,
@@ -36,10 +39,10 @@ def _get_level_n_edges_by_max_width(
     Get level n edges for an edge.
     n is decided by max_depth in traverse_strategy
 
-    :param adj_list: adjacency list
-    :param edges: find edges
-    :param src_id: source node id
-    :param tgt_id: target node id
+    :param edge_adj_list
+    :param edges
+    :param src_id
+    :param tgt_id
     :param max_depth
     :param bidirectional
     :param max_extra_edges
@@ -56,7 +59,7 @@ def _get_level_n_edges_by_max_width(
         candidate_edges = [
             edges[edge_id]
             for node in start_nodes
-            for edge_id in adj_list[node]
+            for edge_id in edge_adj_list[node]
             if not edges[edge_id][2].get("visited", False)
         ]
 
@@ -88,23 +91,87 @@ def _get_level_n_edges_by_max_width(
 
 
 def _get_level_n_edges_by_max_tokens(
-    adj_list: dict,
-    edges: list,
-    src_id: str,
-    tgt_id: str,
-    max_depth: int,
-    bidirectional: bool,
-    max_tokens: int,
-    edge_sampling: str
+        edge_adj_list: dict,
+        node_dict: dict,
+        edges: list,
+        nodes: list,
+        src_edge: tuple,
+        max_depth: int,
+        bidirectional: bool,
+        max_tokens: int,
+        edge_sampling: str
 ) -> list:
-    # TODO: implement this function
-    pass
+    """
+    Get level n edges for an edge.
+    n is decided by max_depth in traverse_strategy
+
+    :param edge_adj_list
+    :param node_dict
+    :param edges
+    :param nodes
+    :param src_edge
+    :param max_depth
+    :param bidirectional
+    :param max_tokens
+    :param edge_sampling
+    :return: level n edges
+    """
+    src_id, tgt_id, src_edge_data = src_edge
+
+    max_tokens -= (src_edge_data["length"] + nodes[node_dict[src_id]][1]["length"]
+                   + nodes[node_dict[tgt_id]][1]["length"])
+
+    level_n_edges = []
+
+    start_nodes = {tgt_id} if not bidirectional else {src_id, tgt_id}
+    temp_nodes = {src_id, tgt_id}
+
+    while max_depth > 0 and max_tokens > 0:
+        max_depth -= 1
+
+        candidate_edges = [
+            edges[edge_id]
+            for node in start_nodes
+            for edge_id in edge_adj_list[node]
+            if not edges[edge_id][2].get("visited", False)
+        ]
+
+        if not candidate_edges:
+            break
+
+        candidate_edges = _sort_edges(candidate_edges, edge_sampling)
+        for edge in candidate_edges:
+            max_tokens -= edge[2]["length"]
+            if not edge[0] in temp_nodes:
+                max_tokens -= nodes[node_dict[edge[0]]][1]["length"]
+            if not edge[1] in temp_nodes:
+                max_tokens -= nodes[node_dict[edge[1]]][1]["length"]
+
+            if max_tokens < 0:
+                return level_n_edges
+
+            level_n_edges.append(edge)
+            edge[2]["visited"] = True
+            temp_nodes.add(edge[0])
+            temp_nodes.add(edge[1])
+
+        new_start_nodes = set()
+        for edge in candidate_edges:
+            if not edge[0] in start_nodes:
+                new_start_nodes.add(edge[0])
+            if not edge[1] in start_nodes:
+                new_start_nodes.add(edge[1])
+
+        start_nodes = new_start_nodes
+
+    return level_n_edges
+
 
 def _sort_edges(edges: list, edge_sampling: str) -> list:
     """
     Sort edges with edge sampling strategy
 
-    :param edges
+    :param edges: total edges
     :param edge_sampling: edge sampling strategy (random, min_loss, max_loss)
     :return: sorted edges
     """
@@ -136,18 +203,23 @@ async def get_batches_with_strategy(
     edges = _sort_edges(edges, edge_sampling)
 
     # 构建临接矩阵
-    adj_list = defaultdict(list)
+    edge_adj_list = defaultdict(list)
+    node_dict = {}
     processing_batches = []
+
     node_cache = {}
 
-    for i, (src, tgt, data) in enumerate(edges):
-        adj_list[src].append(i)
-        adj_list[tgt].append(i)
-
-    async def get_cached_node_info(node_id):
+    async def get_cached_node_info(node_id: str) -> dict:
         if node_id not in node_cache:
             node_cache[node_id] = await _get_node_info(node_id, graph_storage)
         return node_cache[node_id]
+
+    for i, (src, tgt, _) in enumerate(edges):
+        edge_adj_list[src].append(i)
+        edge_adj_list[tgt].append(i)
+
+    for i, (node_name, _) in enumerate(nodes):
+        node_dict[node_name] = i
 
     for edge in tqdm_async(edges, desc="Preparing batches"):
         if "visited" in edge[2] and edge[2]["visited"]:
@@ -161,18 +233,19 @@ async def get_batches_with_strategy(
         src_id = edge[0]
         tgt_id = edge[1]
 
-        _process_nodes.extend([await get_cached_node_info(src_id), await get_cached_node_info(tgt_id)])
+        _process_nodes.extend([await get_cached_node_info(src_id),
+                               await get_cached_node_info(tgt_id)])
         _process_edges.append(edge)
 
         if expand_method == "max_width":
             level_n_edges = _get_level_n_edges_by_max_width(
-                adj_list, edges, src_id, tgt_id, max_depth,
+                edge_adj_list, edges, src_id, tgt_id, max_depth,
                 traverse_strategy.bidirectional, traverse_strategy.max_extra_edges,
                 edge_sampling
             )
         else:
             level_n_edges = _get_level_n_edges_by_max_tokens(
-                adj_list, edges, src_id, tgt_id, max_depth,
+                edge_adj_list, node_dict, edges, nodes, edge, max_depth,
                 traverse_strategy.bidirectional, traverse_strategy.max_tokens,
                 edge_sampling
             )

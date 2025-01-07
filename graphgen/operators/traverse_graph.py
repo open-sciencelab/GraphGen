@@ -7,7 +7,11 @@ from tqdm.asyncio import tqdm as tqdm_async
 from .split_graph import get_batches_with_strategy
 
 
-async def _pre_tokenize(tokenizer: Tokenizer, edges: list, nodes: list) -> tuple:
+async def _pre_tokenize(graph_storage: NetworkXStorage,
+                        tokenizer: Tokenizer,
+                        edges: list,
+                        nodes: list) -> tuple:
+
     sem = asyncio.Semaphore(1000)
     async def handle_edge(edge: tuple) -> tuple:
         async with sem:
@@ -27,11 +31,16 @@ async def _pre_tokenize(tokenizer: Tokenizer, edges: list, nodes: list) -> tuple
     new_nodes = []
 
     for result in tqdm_async(asyncio.as_completed([handle_edge(edge) for edge in edges]), total=len(edges), desc="Pre-tokenizing edges"):
-        new_edges.append(await result)
+        new_edge = await result
+        await graph_storage.update_edge(new_edge[0], new_edge[1], new_edge[2])
+        new_edges.append(new_edge)
 
     for result in tqdm_async(asyncio.as_completed([handle_node(node) for node in nodes]), total=len(nodes), desc="Pre-tokenizing nodes"):
-        new_nodes.append(await result)
+        new_node = await result
+        await graph_storage.update_node(new_node[0], new_node[1])
+        new_nodes.append(new_node)
 
+    await graph_storage.index_done_callback()
     return new_edges, new_nodes
 
 async def traverse_graph_by_edge(
@@ -112,7 +121,7 @@ async def traverse_graph_by_edge(
     edges = list(await graph_storage.get_all_edges())
     nodes = await graph_storage.get_all_nodes()
 
-    edges, nodes = await _pre_tokenize(tokenizer, edges, nodes)
+    edges, nodes = await _pre_tokenize(graph_storage, tokenizer, edges, nodes)
 
     processing_batches = await get_batches_with_strategy(
         nodes,

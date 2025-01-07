@@ -4,3 +4,4 @@ cache
 *.log
 *.pyc
 *.html
+.idea/

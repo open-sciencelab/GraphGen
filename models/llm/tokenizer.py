@@ -37,7 +37,7 @@ class Tokenizer:
         """
         Encode text to tokens
 
-        :param text: text
+        :param text
         :return: tokens
         """
         return self.tokenizer.encode(text)
@@ -46,7 +46,7 @@ class Tokenizer:
         """
         Decode tokens to text
 
-        :param tokens: tokens
+        :param tokens
         :return: text
         """
         return self.tokenizer.decode(tokens)

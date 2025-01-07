@@ -36,7 +36,7 @@ def evaluate_reward(corpus, reward_model_names):
         )
         logger.info(f"Loaded reward model: {reward_name}")
         scores.append({
-            'reward_name': reward_name,
+            'reward_name': reward_name.split('/')[-1],
             'score': reward_evaluator.get_average_score(corpus)
         })
         logger.info(f"{reward_name} scores: {scores[-1]['score']}")

@@ -8,15 +8,20 @@ from .split_graph import get_batches_with_strategy
 
 
 async def _pre_tokenize(tokenizer: Tokenizer, edges: list, nodes: list) -> tuple:
+    sem = asyncio.Semaphore(1000)
     async def handle_edge(edge: tuple) -> tuple:
-        loop = create_event_loop()
-        edge[2]['length'] = len(await loop.run_in_executor(None, tokenizer.encode_string, edge[2]['description']))
-        return edge
+        async with sem:
+            if 'length' not in edge[2]:
+                edge[2]['length'] = len(
+                    await asyncio.get_event_loop().run_in_executor(None, tokenizer.encode_string, edge[2]['description']))
+            return edge
 
     async def handle_node(node: dict) -> dict:
-        loop = create_event_loop()
-        node[1]['length'] = len(await loop.run_in_executor(None, tokenizer.encode_string, node[1]['description']))
-        return node
+        async with sem:
+            if 'length' not in node[1]:
+                node[1]['length'] = len(
+                    await asyncio.get_event_loop().run_in_executor(None, tokenizer.encode_string, node[1]['description']))
+            return node
 
     new_edges = []
     new_nodes = []

@@ -29,7 +29,6 @@ async def _pre_tokenize(tokenizer: Tokenizer, edges: list, nodes: list) -> tuple
 
     return new_edges, new_nodes
 
-
 async def traverse_graph_by_edge(
     llm_client: OpenAIModel,
     tokenizer: Tokenizer,
@@ -91,7 +90,10 @@ async def traverse_graph_by_edge(
                 )
             )
 
+            pre_length = sum([node['length'] for node in _process_batch[0]]) + sum([edge[2]['length'] for edge in _process_batch[1]])
+
             logger.info(f"{len(_process_batch[0])} nodes and {len(_process_batch[1])} edges processed")
+            logger.info(f"Pre-length: {pre_length}")
             logger.info(f"Question: {question} Answer: {context}")
 
             return {
@@ -105,8 +107,7 @@ async def traverse_graph_by_edge(
     edges = list(await graph_storage.get_all_edges())
     nodes = await graph_storage.get_all_nodes()
 
-    if traverse_strategy.expand_method == "max_tokens":
-        edges, nodes = await _pre_tokenize(tokenizer, edges, nodes)
+    edges, nodes = await _pre_tokenize(tokenizer, edges, nodes)
 
     processing_batches = await get_batches_with_strategy(
         nodes,

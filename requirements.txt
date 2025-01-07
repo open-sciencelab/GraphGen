@@ -12,3 +12,5 @@ tenacity
 nltk
 jieba
 torch
+plotly
+pandas

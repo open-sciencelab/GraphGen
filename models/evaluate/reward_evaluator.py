@@ -1,9 +1,8 @@
-import torch
 from dataclasses import dataclass
 from .base_evaluator import BaseEvaluator
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from models.text.text_pair import TextPair
-from utils import logger, create_event_loop
+from utils import create_event_loop
 
 
 @dataclass
@@ -17,8 +16,6 @@ class RewardEvaluator(BaseEvaluator):
 
         self.rank_model.eval()
         self.rank_model.to("cuda")
-
-        logger.info(f"Loaded reward model: {self.reward_name}")
 
     async def evaluate_single(self, pair: TextPair) -> float:
         loop = create_event_loop()

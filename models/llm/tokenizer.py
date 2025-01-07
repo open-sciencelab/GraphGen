@@ -33,7 +33,7 @@ class Tokenizer:
     def __post_init__(self):
         self.tokenizer = get_tokenizer(self.model_name)
 
-    def encode_string(self, text: str) -> List[str]:
+    def encode_string(self, text: str) -> List[int]:
         """
         Encode text to tokens
 
@@ -42,7 +42,7 @@ class Tokenizer:
         """
         return self.tokenizer.encode(text)
 
-    def decode_tokens(self, tokens: List[str]) -> str:
+    def decode_tokens(self, tokens: List[int]) -> str:
         """
         Decode tokens to text
 

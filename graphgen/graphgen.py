@@ -171,6 +171,6 @@ class GraphGen:
         loop.run_until_complete(self.async_traverse())
 
     async def async_traverse(self):
-        results = await traverse_graph_by_edge(self.teacher_llm_client, self.graph_storage, self.traverse_strategy)
+        results = await traverse_graph_by_edge(self.teacher_llm_client, self.tokenizer_instance, self.graph_storage, self.traverse_strategy)
         await self.qa_storage.upsert(results)
         await self.qa_storage.index_done_callback()

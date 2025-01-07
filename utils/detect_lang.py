@@ -19,6 +19,8 @@ def detect_main_language(text):
     english_count = sum(1 for char in text if is_english_char(char))
 
     total = chinese_count + english_count
+    if total == 0:
+        return 'en'
 
     chinese_ratio = chinese_count / total
 

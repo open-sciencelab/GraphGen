@@ -1,14 +1,38 @@
 import asyncio
 
-from models import OpenAIModel, NetworkXStorage, TraverseStrategy
+from models import OpenAIModel, NetworkXStorage, TraverseStrategy, Tokenizer
 from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
-from utils import detect_main_language, compute_content_hash, logger
+from utils import detect_main_language, compute_content_hash, logger, create_event_loop
 from tqdm.asyncio import tqdm as tqdm_async
 from .split_graph import get_batches_with_strategy
 
 
+async def _pre_tokenize(tokenizer: Tokenizer, edges: list, nodes: list) -> tuple:
+    async def handle_edge(edge: tuple) -> tuple:
+        loop = create_event_loop()
+        edge[2]['length'] = len(await loop.run_in_executor(None, tokenizer.encode_string, edge[2]['description']))
+        return edge
+
+    async def handle_node(node: dict) -> dict:
+        loop = create_event_loop()
+        node[1]['length'] = len(await loop.run_in_executor(None, tokenizer.encode_string, node[1]['description']))
+        return node
+
+    new_edges = []
+    new_nodes = []
+
+    for result in tqdm_async(asyncio.as_completed([handle_edge(edge) for edge in edges]), total=len(edges), desc="Pre-tokenizing edges"):
+        new_edges.append(await result)
+
+    for result in tqdm_async(asyncio.as_completed([handle_node(node) for node in nodes]), total=len(nodes), desc="Pre-tokenizing nodes"):
+        new_nodes.append(await result)
+
+    return new_edges, new_nodes
+
+
 async def traverse_graph_by_edge(
     llm_client: OpenAIModel,
+    tokenizer: Tokenizer,
     graph_storage: NetworkXStorage,
     traverse_strategy: TraverseStrategy,
     max_concurrent: int = 1000
@@ -16,10 +40,11 @@ async def traverse_graph_by_edge(
     """
     Traverse the graph
 
-    :param llm_client: llm client
-    :param graph_storage: graph storage instance
-    :param traverse_strategy: traverse strategy
-    :param max_concurrent: max concurrent
+    :param llm_client
+    :param tokenizer
+    :param graph_storage
+    :param traverse_strategy
+    :param max_concurrent
     :return: question and answer
     """
 
@@ -79,6 +104,9 @@ async def traverse_graph_by_edge(
     results = {}
     edges = list(await graph_storage.get_all_edges())
     nodes = await graph_storage.get_all_nodes()
+
+    if traverse_strategy.expand_method == "max_tokens":
+        edges, nodes = await _pre_tokenize(tokenizer, edges, nodes)
 
     processing_batches = await get_batches_with_strategy(
         nodes,

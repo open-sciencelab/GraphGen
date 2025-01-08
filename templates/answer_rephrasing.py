@@ -44,6 +44,8 @@ To generate a version of the text that is rephrased and conveys the same meaning
 {relationships}
 
 ################
+Please directly output the rephrased text below, without any additional content.
+
 Rephrased Text:
 """
 
@@ -91,6 +93,8 @@ TEMPLATE_ZH: str = """---角色---
 {relationships}
 
 ################
+请在下方直接输出重述文本，不要输出任何额外的内容。
+
 重述文本:
 """
 

@@ -86,6 +86,12 @@ async def traverse_graph_by_edge(
 
         context = await llm_client.generate_answer(prompt)
 
+        # post-process the context
+        if context.startswith("Rephrased Text:"):
+            context = context[len("Rephrased Text:"):].strip()
+        elif context.startswith("重述文本:"):
+            context = context[len("重述文本:"):].strip()
+
         return context
 
     async def _process_single_batch(
@@ -103,6 +109,11 @@ async def traverse_graph_by_edge(
                     answer=context
                 )
             )
+
+            if question.startswith("Question:"):
+                question = question[len("Question:"):].strip()
+            elif question.startswith("问题："):
+                question = question[len("问题："):].strip()
 
             pre_length = sum([node['length'] for node in _process_batch[0]]) + sum([edge[2]['length'] for edge in _process_batch[1]])
 

@@ -6,7 +6,7 @@ from models import Tokenizer
 from utils.log import parse_log
 import plotly.express as px
 
-def analyse_log(log_info: dict) -> dict:
+def analyse_log(log_info: dict) -> list:
     """
     Analyse the log information.
 
@@ -14,17 +14,26 @@ def analyse_log(log_info: dict) -> dict:
     :return
     """
     logs = []
+    current_message = None
+
     for line in log_info:
         match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - (\w+) - (\w+) - (.+)', line)
-        if not match:
-            continue
-        timestamp, logger_name, log_level, message = match.groups()
-        logs.append({
-            'timestamp': timestamp,
-            'logger_name': logger_name,
-            'log_level': log_level,
-            'message': message
-        })
+        if match:
+            if current_message:
+                logs.append(current_message)
+
+            timestamp, logger_name, log_level, message = match.groups()
+            current_message = {
+                'timestamp': timestamp,
+                'logger_name': logger_name,
+                'log_level': log_level,
+                'message': message
+            }
+        elif current_message:
+            current_message['message'] += '\n' + line.strip()
+
+    if current_message:
+        logs.append(current_message)
 
     logs = [log_item for log_item in logs if log_item['log_level'] == 'INFO']
 
@@ -67,7 +76,6 @@ async def plot_rephrase_process(stats: list[dict]):
 if __name__ == "__main__":
     log = parse_log('/home/PJLAB/chenzihong/Project/graphgen/cache/logs/graphgen.log')
     data = analyse_log(log)
-
     tokenizer = Tokenizer(model_name='cl100k_base')
 
     for item in tqdm(data):

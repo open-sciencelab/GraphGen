@@ -1,3 +1,5 @@
+"""Evaluate the quality of the generated text using various metrics"""
+
 import os
 import json
 import argparse
@@ -72,7 +74,8 @@ if __name__ == '__main__':
     parser.add_argument('--output', type=str, default='cache/output', help='path to save output')
 
     parser.add_argument('--tokenizer', type=str, default='cl100k_base', help='tokenizer name')
-    parser.add_argument('--reward', type=str, default='OpenAssistant/reward-model-deberta-v3-large-v2', help='Comma-separated list of reward models')
+    parser.add_argument('--reward', type=str, default='OpenAssistant/reward-model-deberta-v3-large-v2',
+                        help='Comma-separated list of reward models')
     parser.add_argument('--uni', type=str, default='MingZhong/unieval-sum', help='uni model name')
 
     args = parser.parse_args()
@@ -122,5 +125,4 @@ if __name__ == '__main__':
 
 
     results = pd.DataFrame(results)
-        
     results.to_csv(os.path.join(args.output, 'evaluation.csv'), index=False)

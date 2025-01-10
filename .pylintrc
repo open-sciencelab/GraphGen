@@ -52,18 +52,16 @@ ignore=CVS
 # ignore-list. The regex matches against paths and can be in Posix or Windows
 # format. Because '\\' represents the directory delimiter on Windows systems,
 # it can't be used as an escape character.
-ignore-paths=
 
 # Files or directories matching the regular expression patterns are skipped.
 # The regex matches against base names, not paths. The default value ignores
 # Emacs file locks
 ignore-patterns=^\.#
 
-# List of module names for which member attributes should not be checked and
-# will not be imported (useful for modules/projects where namespaces are
-# manipulated during runtime and thus existing member attributes cannot be
-# deduced by static analysis). It supports qualified module names, as well as
-# Unix pattern matching.
+# List of module names for which member attributes should not be checked
+# (useful for modules/projects where namespaces are manipulated during runtime
+# and thus existing member attributes cannot be deduced by static analysis). It
+# supports qualified module names, as well as Unix pattern matching.
 ignored-modules=
 
 # Python code to execute, usually for sys.path manipulation such as
@@ -87,13 +85,9 @@ load-plugins=
 # Pickle collected data for later comparisons.
 persistent=yes
 
-# Resolve imports to .pyi stubs if available. May reduce no-member messages and
-# increase not-an-iterable messages.
-prefer-stubs=no
-
 # Minimum Python version to use for version dependent checks. Will default to
 # the version used to run pylint.
-py-version=3.10
+py-version=3.11
 
 # Discover python modules and packages in the file system subtree.
 recursive=no
@@ -307,9 +301,6 @@ max-locals=15
 # Maximum number of parents for a class (see R0901).
 max-parents=7
 
-# Maximum number of positional arguments for function / method.
-max-positional-arguments=5
-
 # Maximum number of public methods for a class (see R0904).
 max-public-methods=20
 
@@ -345,7 +336,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=120
 
 # Maximum number of lines in a module.
 max-module-lines=1000
@@ -438,7 +429,28 @@ disable=raw-checker-failed,
         deprecated-pragma,
         use-symbolic-message-instead,
         use-implicit-booleaness-not-comparison-to-string,
-        use-implicit-booleaness-not-comparison-to-zero
+        use-implicit-booleaness-not-comparison-to-zero,
+        missing-module-docstring,
+        missing-class-docstring,
+        missing-function-docstring,
+        W0122,  # Use of exec (exec-used)
+        R0914,  # Too many local variables (19/15) (too-many-locals)
+        R0903,  # Too few public methods (1/2)
+        W0613,  # Unused argument
+        W0511,  # TODO
+        W0719,  # Raising too general exception: Exception
+        R0801,  # Similar lines
+        W0105,  # String statement has no effect (pointless-string-statement)
+        R0913,  # Too many arguments (6/5) (too-many-arguments)
+        C0415,  # Import outside toplevel
+        R0902,  # Too many instance attributes (11/7)
+        R1725,  # Consider using Python 3 style super() without arguments (super-with-arguments)
+        W0622,  # Redefining built-in 'id' (redefined-builtin)
+        R0904,  # Too many public methods (27/20) (too-many-public-methods)
+        E1120,  # TODO: unbound-method-call-no-value-for-parameter
+        R0917,  # Too many positional arguments (6/5) (too-many-positional-arguments)
+        C0103,
+        E0401
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -475,11 +487,6 @@ max-nested-blocks=5
 # it will be considered as an explicit return statement and no message will be
 # printed.
 never-returning-functions=sys.exit,argparse.parse_error
-
-# Let 'consider-using-join' be raised when the separator to join on would be
-# non-empty (resulting in expected fixes of the type: ``"- " + " -
-# ".join(items)``)
-suggest-join-with-non-empty-separator=yes
 
 
 [REPORTS]

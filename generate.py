@@ -1,9 +1,10 @@
 import os
 import json
 import argparse
+from dotenv import load_dotenv
+
 from graphgen.graphgen import GraphGen
 from models import OpenAIModel, Tokenizer, TraverseStrategy
-from dotenv import load_dotenv
 from utils import set_logger
 
 sys_path = os.path.abspath(os.path.dirname(__file__))
@@ -35,11 +36,13 @@ if __name__ == '__main__':
     input_file = args.input_file
 
     if args.data_type == 'raw':
-        with open(input_file, "r") as f:
+        with open(input_file, "r", encoding='utf-8') as f:
             data = [json.loads(line) for line in f]
     elif args.data_type == 'chunked':
-        with open(input_file, "r") as f:
+        with open(input_file, "r", encoding='utf-8') as f:
             data = json.load(f)
+    else:
+        raise ValueError(f"Invalid data type: {args.data_type}")
 
     teacher_llm_client = OpenAIModel(
         model_name=os.getenv("TEACHER_MODEL"),

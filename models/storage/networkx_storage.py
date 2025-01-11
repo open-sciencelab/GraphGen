@@ -1,17 +1,17 @@
 import os
 import html
 import networkx as nx
-import numpy as np
 
-from typing import Any, Union, cast
+from typing import Any, Union, cast, Optional
 from dataclasses import dataclass
+
 from .base_storage import BaseGraphStorage
 from utils import logger
 
 @dataclass
 class NetworkXStorage(BaseGraphStorage):
     @staticmethod
-    def load_nx_graph(file_name) -> nx.Graph:
+    def load_nx_graph(file_name) -> Optional[nx.Graph]:
         if os.path.exists(file_name):
             return nx.read_graphml(file_name)
         return None
@@ -85,9 +85,6 @@ class NetworkXStorage(BaseGraphStorage):
                 f"Loaded graph from {self._graphml_xml_file} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges"
             )
         self._graph = preloaded_graph or nx.Graph()
-        # self._node_embed_algorithms = {
-        #     "node2vec": self._node2vec_embed,
-        # }
 
     async def index_done_callback(self):
         NetworkXStorage.write_nx_graph(self._graph, self._graphml_xml_file)
@@ -154,8 +151,3 @@ class NetworkXStorage(BaseGraphStorage):
             logger.info(f"Node {node_id} deleted from the graph.")
         else:
             logger.warning(f"Node {node_id} not found in the graph for deletion.")
-
-    async def embed_nodes(self, algorithm: str) -> tuple[np.ndarray, list[str]]:
-        if algorithm not in self._node_embed_algorithms:
-            raise ValueError(f"Node embedding algorithm {algorithm} not supported")
-        return await self._node_embed_algorithms[algorithm]()

@@ -1,15 +1,14 @@
 # https://github.com/HKUDS/LightRAG
 
 import os
-import time
 import asyncio
+import time
+from typing import List, cast, Union
+from dataclasses import dataclass
 from tqdm.asyncio import tqdm as tqdm_async
 
 from .operators import *
 from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch, Tokenizer, TraverseStrategy
-from typing import List, cast, Union
-
-from dataclasses import dataclass
 from utils import create_event_loop, logger, compute_content_hash
 from models.storage.base_storage import StorageNameSpace
 
@@ -19,6 +18,7 @@ sys_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 @dataclass
 class GraphGen:
+    unique_id: int = int(time.time())
     working_dir: str = os.path.join(sys_path, "cache")
     full_docs_storage: JsonKVStorage = JsonKVStorage(
         working_dir, namespace="full_docs"
@@ -33,7 +33,7 @@ class GraphGen:
         working_dir, namespace="graph"
     )
     qa_storage: JsonKVStorage = JsonKVStorage(
-        os.path.join(working_dir, "data", "graphgen"), namespace=f"qa-{int(time.time())}"
+        os.path.join(working_dir, "data", "graphgen"), namespace=f"qa-{unique_id}"
     )
 
     # text chunking

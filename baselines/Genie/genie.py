@@ -1,11 +1,11 @@
 # https://arxiv.org/pdf/2401.14367
 import os
 import json
-from dotenv import load_dotenv
 import argparse
 import asyncio
 
 from dataclasses import dataclass
+from dotenv import load_dotenv
 from models import OpenAIModel
 from typing import List
 from utils import create_event_loop, compute_content_hash
@@ -58,7 +58,7 @@ class Genie:
         loop = create_event_loop()
         return loop.run_until_complete(self.async_generate(docs))
 
-    async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
+    async def async_generate(self, docs: List[List[dict]]) -> dict:
         final_results = {}
         semaphore = asyncio.Semaphore(self.max_concurrent)
 

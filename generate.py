@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import argparse
 from dotenv import load_dotenv
 
@@ -8,7 +9,8 @@ from models import OpenAIModel, Tokenizer, TraverseStrategy
 from utils import set_logger
 
 sys_path = os.path.abspath(os.path.dirname(__file__))
-set_logger(os.path.join(sys_path, "cache", "logs", "graphgen.log"), if_stream=False)
+unique_id = int(time.time())
+set_logger(os.path.join(sys_path, "cache", "logs", f"graphgen_{unique_id}.log"), if_stream=False)
 
 load_dotenv()
 
@@ -58,6 +60,7 @@ if __name__ == '__main__':
     traverse_strategy = TraverseStrategy()
 
     graph_gen = GraphGen(
+        unique_id=unique_id,
         teacher_llm_client=teacher_llm_client,
         student_llm_client=student_llm_client,
         if_web_search=args.web_search,

@@ -1,10 +1,10 @@
 import asyncio
+from tqdm.asyncio import tqdm as tqdm_async
 
 from models import OpenAIModel, NetworkXStorage, TraverseStrategy, Tokenizer
 from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
-from utils import detect_main_language, compute_content_hash, logger, create_event_loop
-from tqdm.asyncio import tqdm as tqdm_async
-from .split_graph import get_batches_with_strategy
+from utils import detect_main_language, compute_content_hash, logger
+from graphgen.operators.split_graph import get_batches_with_strategy
 
 
 async def _pre_tokenize(graph_storage: NetworkXStorage,
@@ -17,25 +17,31 @@ async def _pre_tokenize(graph_storage: NetworkXStorage,
         async with sem:
             if 'length' not in edge[2]:
                 edge[2]['length'] = len(
-                    await asyncio.get_event_loop().run_in_executor(None, tokenizer.encode_string, edge[2]['description']))
+                    await asyncio.get_event_loop().run_in_executor(None,
+                                                                   tokenizer.encode_string,
+                                                                   edge[2]['description']))
             return edge
 
     async def handle_node(node: dict) -> dict:
         async with sem:
             if 'length' not in node[1]:
                 node[1]['length'] = len(
-                    await asyncio.get_event_loop().run_in_executor(None, tokenizer.encode_string, node[1]['description']))
+                    await asyncio.get_event_loop().run_in_executor(None,
+                                                                   tokenizer.encode_string,
+                                                                   node[1]['description']))
             return node
 
     new_edges = []
     new_nodes = []
 
-    for result in tqdm_async(asyncio.as_completed([handle_edge(edge) for edge in edges]), total=len(edges), desc="Pre-tokenizing edges"):
+    for result in tqdm_async(asyncio.as_completed([handle_edge(edge) for edge in edges]),
+                             total=len(edges), desc="Pre-tokenizing edges"):
         new_edge = await result
         await graph_storage.update_edge(new_edge[0], new_edge[1], new_edge[2])
         new_edges.append(new_edge)
 
-    for result in tqdm_async(asyncio.as_completed([handle_node(node) for node in nodes]), total=len(nodes), desc="Pre-tokenizing nodes"):
+    for result in tqdm_async(asyncio.as_completed([handle_node(node) for node in nodes]),
+                             total=len(nodes), desc="Pre-tokenizing nodes"):
         new_node = await result
         await graph_storage.update_node(new_node[0], new_node[1])
         new_nodes.append(new_node)
@@ -71,7 +77,8 @@ async def traverse_graph_by_edge(
             f"{_process_node['node_id']}: {_process_node['description']}" for _process_node in _process_nodes
         ]
         relations = [
-            f"{_process_edge[0]} -- {_process_edge[1]}: {_process_edge[2]['description']}" for _process_edge in _process_edges
+            f"{_process_edge[0]} -- {_process_edge[1]}: {_process_edge[2]['description']}"
+            for _process_edge in _process_edges
         ]
 
         entities_str = "\n".join([f"{index + 1}. {entity}" for index, entity in enumerate(entities)])
@@ -115,16 +122,20 @@ async def traverse_graph_by_edge(
             elif question.startswith("问题："):
                 question = question[len("问题："):].strip()
 
-            pre_length = sum([node['length'] for node in _process_batch[0]]) + sum([edge[2]['length'] for edge in _process_batch[1]])
+            pre_length = sum(node['length'] for node in _process_batch[0]) \
+                         + sum(edge[2]['length'] for edge in _process_batch[1])
 
-            logger.info(f"{len(_process_batch[0])} nodes and {len(_process_batch[1])} edges processed")
-            logger.info(f"Pre-length: {pre_length}")
-            logger.info(f"Question: {question} Answer: {context}")
+            losses = [(edge[0], edge[1], edge[2]['loss']) for edge in _process_batch[1]]
+
+            logger.info("%d nodes and %d edges processed", len(_process_batch[0]), len(_process_batch[1]))
+            logger.info("Pre-length: %s", pre_length)
+            logger.info("Question: %s Answer: %s", question, context)
 
             return {
                 compute_content_hash(context): {
                     "question": question,
-                    "answer": context
+                    "answer": context,
+                    "losses": losses
                 }
             }
 
@@ -146,7 +157,7 @@ async def traverse_graph_by_edge(
     ), total=len(processing_batches), desc="Processing batches"):
         try:
             results.update(await result)
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             logger.error("Error occurred while processing batches: %s", e)
 
     return results

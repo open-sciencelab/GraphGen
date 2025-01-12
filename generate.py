@@ -2,6 +2,7 @@ import os
 import json
 import time
 import argparse
+import yaml
 from dotenv import load_dotenv
 
 from graphgen.graphgen import GraphGen
@@ -75,3 +76,5 @@ if __name__ == '__main__':
     graph_gen.judge(re_judge=False)
 
     graph_gen.traverse()
+    with open(os.path.join(sys_path, "cache", "configs", f"graphgen_{unique_id}.yaml"), "w", encoding='utf-8') as f:
+        yaml.dump(traverse_strategy.to_yaml(), f)

@@ -67,7 +67,7 @@ class GraphGen:
             }
             _add_doc_keys = await self.full_docs_storage.filter_keys(list(new_docs.keys()))
             new_docs = {k: v for k, v in new_docs.items() if k in _add_doc_keys}
-            if not len(new_docs):
+            if len(new_docs) == 0:
                 logger.warning("All docs are already in the storage")
                 return {}
             logger.info(f"[New Docs] inserting {len(new_docs)} docs")
@@ -86,11 +86,12 @@ class GraphGen:
         elif data_type == "chunked":
             assert isinstance(data, list) and isinstance(data[0], list)
             new_docs = {
-                compute_content_hash("".join(chunk['content']), prefix="doc-"): {'content': "".join(chunk['content'])} for doc in data for chunk in doc
+                compute_content_hash("".join(chunk['content']), prefix="doc-"): {'content': "".join(chunk['content'])}
+                for doc in data for chunk in doc
             }
             _add_doc_keys = await self.full_docs_storage.filter_keys(list(new_docs.keys()))
             new_docs = {k: v for k, v in new_docs.items() if k in _add_doc_keys}
-            if not len(new_docs):
+            if len(new_docs) == 0:
                 logger.warning("All docs are already in the storage")
                 return {}
             logger.info(f"[New Docs] inserting {len(new_docs)} docs")

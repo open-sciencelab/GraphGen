@@ -19,3 +19,16 @@ class TraverseStrategy(BaseStrategy):
     edge_sampling: str = "max_loss" # "max_loss" or "min_loss" or "random"
     # 孤立节点的处理策略
     isolated_node_strategy: str = "add" # "add" or "ignore"
+
+    def to_yaml(self):
+        return {
+            "traverse_strategy": {
+                "expand_method": self.expand_method,
+                "bidirectional": self.bidirectional,
+                "max_extra_edges": self.max_extra_edges,
+                "max_tokens": self.max_tokens,
+                "max_depth": self.max_depth,
+                "edge_sampling": self.edge_sampling,
+                "isolated_node_strategy": self.isolated_node_strategy
+            }
+        }

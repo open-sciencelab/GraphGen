@@ -1,12 +1,13 @@
 import re
-
+import plotly.express as px
+from collections import defaultdict
+import plotly.graph_objects as go
 import pandas as pd
 from tqdm import tqdm
+
 from models import Tokenizer
 from utils.log import parse_log
-import plotly.express as px
-import plotly.graph_objects as go
-from collections import defaultdict
+
 
 def analyse_log(log_info: dict) -> list:
     """
@@ -80,7 +81,6 @@ def plot_pre_length_distribution(stats: list[dict]):
     :return fig
     """
 
-    # 使用传入的stats参数而不是全局的data
     if not stats:
         return go.Figure()
 
@@ -115,6 +115,66 @@ def plot_pre_length_distribution(stats: list[dict]):
     # 设置图表布局
     fig.update_layout(
         title='Distribution of Pre-Length',
+        xaxis_title='Length Range',
+        yaxis_title='Count',
+        bargap=0.2,
+        showlegend=False
+    )
+
+    # 如果数据点过多，优化x轴标签显示
+    if len(sorted_bins) > 10:
+        fig.update_layout(
+            xaxis={
+                'tickangle': 45,
+                'tickmode': 'array',
+                'ticktext': sorted_bins[::2],  # 每隔一个显示标签
+                'tickvals': list(range(len(sorted_bins)))[::2]
+            }
+        )
+
+    return fig
+
+def plot_post_synth_length_distribution(stats: list[dict]):
+    """
+    Plot the distribution of post-synthesis length.
+
+    :return fig
+    """
+
+    if not stats:
+        return go.Figure()
+
+    # 计算最大长度并确定区间
+    max_length = max(item['post_length'] for item in stats)
+    bin_size = 50
+    max_length = ((max_length // bin_size) + 1) * bin_size
+
+    # 使用defaultdict避免键不存在的检查
+    length_distribution = defaultdict(int)
+
+    # 一次遍历完成所有统计
+    for item in stats:
+        bin_start = (item['post_length'] // bin_size) * bin_size
+        bin_key = f"{bin_start}-{bin_start + bin_size}"
+        length_distribution[bin_key] += 1
+
+    # 转换为排序后的列表以保持区间顺序
+    sorted_bins = sorted(length_distribution.keys(),
+                         key=lambda x: int(x.split('-')[0]))
+
+    # 创建图表
+    fig = go.Figure(data=[
+        go.Bar(
+            x=sorted_bins,
+            y=[length_distribution[bin_] for bin_ in sorted_bins],
+            text=[length_distribution[bin_] for bin_ in sorted_bins],
+            textposition='auto',
+        )
+    ])
+
+    # 设置图表布局
+    fig.update_layout(
+        title='Distribution of Post-Synthesis Length',
         xaxis_title='Length Range',
         yaxis_title='Count',
         bargap=0.2,

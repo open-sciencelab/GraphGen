@@ -433,6 +433,7 @@ disable=raw-checker-failed,
         missing-module-docstring,
         missing-class-docstring,
         missing-function-docstring,
+        no-member,
         W0122,  # Use of exec (exec-used)
         R0914,  # Too many local variables (19/15) (too-many-locals)
         R0903,  # Too few public methods (1/2)
@@ -450,7 +451,7 @@ disable=raw-checker-failed,
         E1120,  # TODO: unbound-method-call-no-value-for-parameter
         R0917,  # Too many positional arguments (6/5) (too-many-positional-arguments)
         C0103,
-        E0401
+        E0401,
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

@@ -1,12 +1,15 @@
 """Simulate text length distributions using input data distributions when rephrasing."""
 
+import copy
+import os
+import json
 import gradio as gr
 
 from models import TraverseStrategy, NetworkXStorage
-from charts.plot_rephrase_process import plot_pre_length_distribution
+from charts.plot_rephrase_process import plot_pre_length_distribution, plot_post_synth_length_distribution
 from graphgen.operators.split_graph import get_batches_with_strategy
 from utils import create_event_loop
-import copy
+from models import Tokenizer
 
 if __name__ == "__main__":
     networkx_storage = NetworkXStorage(
@@ -32,22 +35,22 @@ if __name__ == "__main__":
         return await get_batches_with_strategy(nodes, edges, networkx_storage, traverse_strategy)
 
     def traverse_graph(
-        bidirectional: bool,
-        expand_method: str,
-        max_extra_edges: int,
-        max_tokens: int,
-        max_depth: int,
-        edge_sampling: str,
-        isolated_node_strategy: str
+        ts_bidirectional: bool,
+        ts_expand_method: str,
+        ts_max_extra_edges: int,
+        ts_max_tokens: int,
+        ts_max_depth: int,
+        ts_edge_sampling: str,
+        ts_isolated_node_strategy: str
     ) -> str:
         traverse_strategy = TraverseStrategy(
-            bidirectional=bidirectional,
-            expand_method=expand_method,
-            max_extra_edges=max_extra_edges,
-            max_tokens=max_tokens,
-            max_depth=max_depth,
-            edge_sampling=edge_sampling,
-            isolated_node_strategy=isolated_node_strategy
+            bidirectional=ts_bidirectional,
+            expand_method=ts_expand_method,
+            max_extra_edges=ts_max_extra_edges,
+            max_tokens=ts_max_tokens,
+            max_depth=ts_max_depth,
+            edge_sampling=ts_edge_sampling,
+            isolated_node_strategy=ts_isolated_node_strategy
         )
 
         loop = create_event_loop()
@@ -56,8 +59,8 @@ if __name__ == "__main__":
 
         data = []
         for _process_batch in batches:
-            pre_length = sum([node['length'] for node in _process_batch[0]]) + sum(
-                [edge[2]['length'] for edge in _process_batch[1]])
+            pre_length = sum(node['length'] for node in _process_batch[0]) + sum(
+                edge[2]['length'] for edge in _process_batch[1])
             data.append({
                 'pre_length': pre_length
             })
@@ -66,60 +69,88 @@ if __name__ == "__main__":
         return fig
 
 
-    def update_sliders(expand_method):
-        if expand_method == "max_tokens":
+    def update_sliders(method_name):
+        if method_name == "max_tokens":
             return gr.update(visible=True), gr.update(visible=False)  # Show max_tokens, hide max_extra_edges
-        else:
-            return gr.update(visible=False), gr.update(visible=True)  # Hide max_tokens, show max_extra_edges
+        return gr.update(visible=False), gr.update(visible=True)  # Hide max_tokens, show max_extra_edges
 
 
-    with gr.Blocks() as iface:
-        gr.Markdown("# Graph Traversal Interface")
+    with gr.Blocks() as app:
+        with gr.Tab("Before Traversal"):
+            with gr.Row():
+                with gr.Column():
+                    bidirectional = gr.Checkbox(label="Bidirectional", value=False)
+                    expand_method = gr.Dropdown(
+                        choices=["max_width", "max_tokens"],
+                        value="max_tokens",
+                        label="Expand Method",
+                        interactive=True
+                    )
 
-        with gr.Row():
-            with gr.Column():
-                bidirectional = gr.Checkbox(label="Bidirectional", value=False)
-                expand_method = gr.Dropdown(
-                    choices=["max_width", "max_tokens"],
-                    value="max_tokens",
-                    label="Expand Method",
-                    interactive=True
-                )
+                    # Initialize sliders
+                    max_extra_edges = gr.Slider(minimum=1, maximum=50, value=5, step=1, label="Max Extra Edges",
+                                                visible=False)
+                    max_tokens = gr.Slider(minimum=128, maximum=8 * 1024, value=1024, step=128, label="Max Tokens")
+                    max_depth = gr.Slider(minimum=1, maximum=10, value=3, step=1, label="Max Depth")
+                    edge_sampling = gr.Dropdown(
+                        choices=["max_loss", "random", "min_loss"],
+                        value="max_loss",
+                        label="Edge Sampling Strategy"
+                    )
+                    isolated_node_strategy = gr.Dropdown(
+                        choices=["add", "ignore", "connect"],
+                        value="add",
+                        label="Isolated Node Strategy"
+                    )
+                    submit_btn = gr.Button("Traverse Graph")
 
-                # Initialize sliders
-                max_extra_edges = gr.Slider(minimum=1, maximum=50, value=5, step=1, label="Max Extra Edges",
-                                            visible=False)
-                max_tokens = gr.Slider(minimum=128, maximum=8 * 1024, value=1024, step=128, label="Max Tokens")
-                max_depth = gr.Slider(minimum=1, maximum=10, value=3, step=1, label="Max Depth")
-                edge_sampling = gr.Dropdown(
-                    choices=["max_loss", "random", "min_loss"],
-                    value="max_loss",
-                    label="Edge Sampling Strategy"
-                )
-                isolated_node_strategy = gr.Dropdown(
-                    choices=["add", "ignore", "connect"],
-                    value="add",
-                    label="Isolated Node Strategy"
-                )
-                submit_btn = gr.Button("Traverse Graph")
+            with gr.Row():
+                output_plot = gr.Plot(label="Graph Visualization")
 
-        with gr.Row():
-            output_plot = gr.Plot(label="Graph Visualization")
+            # Set up event listener for expand_method dropdown
+            expand_method.change(fn=update_sliders, inputs=expand_method, outputs=[max_tokens, max_extra_edges])
 
-        # Set up event listener for expand_method dropdown
-        expand_method.change(fn=update_sliders, inputs=expand_method, outputs=[max_tokens, max_extra_edges])
+            submit_btn.click(
+                fn=traverse_graph,
+                inputs=[
+                    bidirectional,
+                    expand_method,
+                    max_extra_edges,
+                    max_tokens,
+                    max_depth,
+                    edge_sampling,
+                    isolated_node_strategy
+                ],
+                outputs=[output_plot]
+            )
 
-        submit_btn.click(
-            fn=traverse_graph,
-            inputs=[
-                bidirectional,
-                expand_method,
-                max_extra_edges,
-                max_tokens,
-                max_depth,
-                edge_sampling,
-                isolated_node_strategy
-            ],
-            outputs=[output_plot]
-        )
-    iface.launch()
+        with gr.Tab("After Synthesis"):
+            with gr.Row():
+                with gr.Column():
+                    file_list = os.listdir("cache/data/graphgen")
+                    input_file = gr.Dropdown(choices=file_list, label="Input File")
+                    file_button = gr.Button("Submit File")
+
+            with gr.Row():
+                output_plot = gr.Plot(label="Graph Visualization")
+
+            def synthesize_text(file):
+                tokenizer = Tokenizer()
+                with open(f"cache/data/graphgen/{file}", "r", encoding='utf-8') as f:
+                    data = json.load(f)
+                stats = []
+                for key in data:
+                    item = data[key]
+                    item['post_length'] = len(tokenizer.encode_string(item['answer']))
+                    stats.append({
+                        'post_length': item['post_length']
+                    })
+                fig = plot_post_synth_length_distribution(stats)
+                return fig
+            file_button.click(
+                fn=synthesize_text,
+                inputs=[input_file],
+                outputs=[output_plot]
+            )
+
+    app.launch()

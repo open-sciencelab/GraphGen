@@ -12,7 +12,6 @@ async def judge_relations(
         graph_storage: NetworkXStorage,
         rephrase_storage: JsonKVStorage,
         re_judge: bool = False,
-        max_samples: int = 1,
         max_concurrent: int = 1000) -> NetworkXStorage:
     """
     Get all edges and judge them
@@ -22,7 +21,6 @@ async def judge_relations(
     :param graph_storage: graph storage instance
     :param rephrase_storage: rephrase storage instance
     :param re_judge: re-judge the relations
-    :param max_samples: max samples for each edge
     :param max_concurrent: max concurrent
     :return:
     """
@@ -38,34 +36,14 @@ async def judge_relations(
             edge_data = edge[2]
 
             if (not re_judge) and "loss" in edge_data and edge_data["loss"] is not None:
-                logger.info(f"Edge {source_id} -> {target_id} already judged, loss: {edge_data['loss']}, skip")
+                logger.info("Edge %s -> %s already judged, loss: %s, skip", source_id, target_id, edge_data["loss"])
                 return source_id, target_id, edge_data
 
             description = edge_data["description"]
-            language = "English" if detect_main_language(description) == "en" else "Chinese"
 
             try:
-                # 如果在rephrase_storage中已经存在，直接取出
                 descriptions = await rephrase_storage.get_by_id(description)
-                if not descriptions:
-                    # 多次采样，取平均
-                    descriptions = [(description, 'yes')]
-                    for i in range(max_samples):
-                        if i > 0:
-                            new_description = await teacher_llm_client.generate_answer(
-                                DESCRIPTION_REPHRASING_PROMPT[language]['TEMPLATE'].format(input_sentence=description),
-                                temperature=1
-                            )
-                            descriptions.append((new_description, 'yes'))
-                        new_anti_description = await teacher_llm_client.generate_answer(
-                            DESCRIPTION_REPHRASING_PROMPT[language]['ANTI_TEMPLATE'].format(input_sentence=description),
-                            temperature=1
-                        )
-                        descriptions.append((new_anti_description, 'no'))
-
-                    descriptions = list(set(descriptions))
-
-                    await rephrase_storage.upsert({description: descriptions})
+                assert descriptions is not None
 
                 judgements = []
                 gts = [gt for _, gt in descriptions]
@@ -81,7 +59,7 @@ async def judge_relations(
 
                 edge_data["loss"] = loss
             except Exception as e: # pylint: disable=broad-except
-                logger.error(f"Error in judging relation {source_id} -> {target_id}: {e}")
+                logger.error("Error in judging relation %s -> %s: %s", source_id, target_id, e)
                 logger.info("Use default loss 0.1")
                 edge_data["loss"] = -math.log(0.1)
 

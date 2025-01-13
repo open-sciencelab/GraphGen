@@ -7,10 +7,10 @@ from typing import List, cast, Union
 from dataclasses import dataclass
 from tqdm.asyncio import tqdm as tqdm_async
 
-from .operators import *
 from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch, Tokenizer, TraverseStrategy
 from utils import create_event_loop, logger, compute_content_hash
 from models.storage.base_storage import StorageNameSpace
+from .operators import *
 
 
 sys_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -81,7 +81,8 @@ class GraphGen:
                     compute_content_hash(dp["content"], prefix="chunk-"): {
                         **dp,
                         'full_doc_id': doc_key
-                    } for dp in self.tokenizer_instance.chunk_by_token_size(doc["content"], self.chunk_overlap_size, self.chunk_size)
+                    } for dp in self.tokenizer_instance.chunk_by_token_size(doc["content"],
+                                                                            self.chunk_overlap_size, self.chunk_size)
                 }
                 inserting_chunks.update(chunks)
             _add_chunk_keys = await self.text_chunks_storage.filter_keys(list(inserting_chunks.keys()))
@@ -156,21 +157,29 @@ class GraphGen:
 
     async def _insert_done(self):
         tasks = []
-        for storage_instance in [self.full_docs_storage, self.text_chunks_storage, self.graph_storage, self.wiki_storage]:
+        for storage_instance in [self.full_docs_storage, self.text_chunks_storage,
+                                 self.graph_storage, self.wiki_storage]:
             if storage_instance is None:
                 continue
             tasks.append(cast(StorageNameSpace, storage_instance).index_done_callback())
         await asyncio.gather(*tasks)
 
-    def judge(self, re_judge=False, max_samples=1):
+    def quiz(self, max_samples=1):
         loop = create_event_loop()
-        loop.run_until_complete(self.async_judge(re_judge, max_samples))
+        loop.run_until_complete(self.async_quiz(max_samples))
 
-    async def async_judge(self, re_judge=False, max_samples=1):
-        _update_relations = await judge_relations(self.teacher_llm_client, self.student_llm_client,
-                                                  self.graph_storage, self.rephrase_storage, re_judge, max_samples)
-        await _update_relations.index_done_callback()
+    async def async_quiz(self, max_samples=1):
+        await quiz_relations(self.teacher_llm_client, self.graph_storage, self.rephrase_storage, max_samples)
         await self.rephrase_storage.index_done_callback()
+
+    def judge(self, re_judge=False):
+        loop = create_event_loop()
+        loop.run_until_complete(self.async_judge(re_judge))
+
+    async def async_judge(self, re_judge=False):
+        _update_relations = await judge_relations(self.teacher_llm_client, self.student_llm_client,
+                                                  self.graph_storage, self.rephrase_storage, re_judge)
+        await _update_relations.index_done_callback()
 
     def traverse(self):
         loop = create_event_loop()

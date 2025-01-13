@@ -1,11 +1,12 @@
-import tiktoken
 from dataclasses import dataclass
 from typing import List
+import tiktoken
 
 try:
     from transformers import AutoTokenizer
     TRANSFORMERS_AVAILABLE = True
 except ImportError:
+    AutoTokenizer = None
     TRANSFORMERS_AVAILABLE = False
 
 
@@ -18,11 +19,11 @@ def get_tokenizer(tokenizer_name: str = "cl100k_base"):
     """
     if tokenizer_name in tiktoken.list_encoding_names():
         return tiktoken.get_encoding(tokenizer_name)
-    elif TRANSFORMERS_AVAILABLE:
+    if TRANSFORMERS_AVAILABLE:
         try:
             return AutoTokenizer.from_pretrained(tokenizer_name)
         except Exception as e:
-            raise ValueError(f"Failed to load tokenizer from Hugging Face: {e}")
+            raise ValueError(f"Failed to load tokenizer from Hugging Face: {e}") from e
     else:
         raise ValueError("Hugging Face Transformers is not available, please install it first.")
 

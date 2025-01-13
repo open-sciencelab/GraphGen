@@ -42,22 +42,37 @@ async def quiz_relations(
                 if not descriptions:
                     # 多次采样，取平均
                     descriptions = [(description, 'yes')]
+
+                    new_description_tasks = []
+                    new_anti_description_tasks = []
                     for i in range(max_samples):
                         if i > 0:
-                            new_description = await teacher_llm_client.generate_answer(
-                                DESCRIPTION_REPHRASING_PROMPT[language]['TEMPLATE'].format(input_sentence=description),
+                            new_description_tasks.append(
+                                teacher_llm_client.generate_answer(
+                                    DESCRIPTION_REPHRASING_PROMPT[language]['TEMPLATE'].format(
+                                        input_sentence=description),
+                                    temperature=1
+                                )
+                            )
+                        new_anti_description_tasks.append(
+                            teacher_llm_client.generate_answer(
+                                DESCRIPTION_REPHRASING_PROMPT[language]['ANTI_TEMPLATE'].format(
+                                    input_sentence=description),
                                 temperature=1
                             )
-                            descriptions.append((new_description, 'yes'))
-                        new_anti_description = await teacher_llm_client.generate_answer(
-                            DESCRIPTION_REPHRASING_PROMPT[language]['ANTI_TEMPLATE'].format(input_sentence=description),
-                            temperature=1
                         )
+
+                    new_descriptions = await asyncio.gather(*new_description_tasks)
+                    new_anti_descriptions = await asyncio.gather(*new_anti_description_tasks)
+
+                    for new_description in new_descriptions:
+                        descriptions.append((new_description, 'yes'))
+                    for new_anti_description in new_anti_descriptions:
                         descriptions.append((new_anti_description, 'no'))
 
                     descriptions = list(set(descriptions))
             except Exception as e: # pylint: disable=broad-except
-                logger.error(f"Error when quizzing edge {source_id} -> {target_id}: {e}")
+                logger.error("Error when quizzing edge %s -> %s: %s", source_id, target_id, e)
                 descriptions = [(description, 'yes')]
 
             await rephrase_storage.upsert({description: descriptions})

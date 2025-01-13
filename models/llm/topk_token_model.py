@@ -20,10 +20,10 @@ class TopkTokenModel:
     do_sample: bool = False
     temperature: float = 0
     max_tokens: int = 10240
-    repetition_penalty: float = 1.0
+    repetition_penalty: float = 1.05
     num_beams: int = 1
     topk: int = 50
-    topp: float = 0.1
+    topp: float = 0.95
 
     topk_per_token: int = 5  # number of topk tokens to generate for each token
 

@@ -18,7 +18,7 @@ class TraverseStrategy(BaseStrategy):
     # 同一层中选边的策略（如果是双向拓展，同一层指的是两边连接的边的集合）
     edge_sampling: str = "max_loss" # "max_loss" or "min_loss" or "random"
     # 孤立节点的处理策略
-    isolated_node_strategy: str = "add" # "add" or "ignore"
+    isolated_node_strategy: str = "ignore" # "add" or "ignore"
     # 难度顺序 ["easy", "medium", "hard"], ["hard", "medium", "easy"], ["medium", "medium", "medium"]
     difficulty_order: list = field(default_factory=lambda: ["easy", "medium", "hard"])
 

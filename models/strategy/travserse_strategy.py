@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from models.strategy.base_strategy import BaseStrategy
 
@@ -19,6 +19,8 @@ class TraverseStrategy(BaseStrategy):
     edge_sampling: str = "max_loss" # "max_loss" or "min_loss" or "random"
     # 孤立节点的处理策略
     isolated_node_strategy: str = "add" # "add" or "ignore"
+    # 难度顺序 ["easy", "medium", "hard"], ["hard", "medium", "easy"], ["medium", "medium", "medium"]
+    difficulty_order: list = field(default_factory=lambda: ["easy", "medium", "hard"])
 
     def to_yaml(self):
         return {
@@ -29,6 +31,7 @@ class TraverseStrategy(BaseStrategy):
                 "max_tokens": self.max_tokens,
                 "max_depth": self.max_depth,
                 "edge_sampling": self.edge_sampling,
-                "isolated_node_strategy": self.isolated_node_strategy
+                "isolated_node_strategy": self.isolated_node_strategy,
+                "difficulty_order": self.difficulty_order
             }
         }

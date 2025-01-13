@@ -171,20 +171,21 @@ async def traverse_graph_by_edge(
         losses.append(loss)
     q1, q2 = get_loss_tercile(losses)
 
+    difficulty_order = traverse_strategy.difficulty_order
     for i, batch in enumerate(processing_batches):
         if len(batch[1]) == 0:
-            processing_batches[i] = (batch[0], batch[1], "easy")
+            processing_batches[i] = (batch[0], batch[1], difficulty_order[0])
             continue
         loss = sum(edge[2]['loss'] for edge in batch[1]) / len(batch[1])
         if loss < q1:
             # easy
-            processing_batches[i] = (batch[0], batch[1], "easy")
+            processing_batches[i] = (batch[0], batch[1], difficulty_order[0])
         elif loss < q2:
             # medium
-            processing_batches[i] = (batch[0], batch[1], "medium")
+            processing_batches[i] = (batch[0], batch[1], difficulty_order[1])
         else:
             # hard
-            processing_batches[i] = (batch[0], batch[1], "hard")
+            processing_batches[i] = (batch[0], batch[1], difficulty_order[2])
 
     for result in tqdm_async(asyncio.as_completed(
         [_process_single_batch(batch) for batch in processing_batches]

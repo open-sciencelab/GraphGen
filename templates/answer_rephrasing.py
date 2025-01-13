@@ -43,10 +43,6 @@ To generate a version of the text that is rephrased and conveys the same meaning
 ################
 {relationships}
 
-################
-Please directly output the rephrased text below, without any additional content.
-
-Rephrased Text:
 """
 
 TEMPLATE_ZH: str = """---角色---
@@ -92,6 +88,33 @@ TEMPLATE_ZH: str = """---角色---
 ################
 {relationships}
 
+"""
+
+EASY_REQUIREMENT_EN = """
+---Requirements---
+- Requires a concise and straightforward summary, focusing on core meaning.
+- Uses simple language, avoiding complex sentence structures.
+- Does not need excessive details or examples; just the basic concepts and relationships.
+
+################
+Please directly output the rephrased text below, without any additional content.
+
+Rephrased Text:
+"""
+
+EASY_REQUIREMENT_ZH = """
+---要求---
+- 要求简洁明了，主要传达核心意思。
+- 使用简单的语言，避免复杂的句子结构。
+- 不需要过多的细节或示例，只需基本概念和关系。
+
+################
+请在下方直接输出重述文本，不要输出任何额外的内容。
+
+重述文本:
+"""
+
+MEDIUM_REQUIREMENT_ZH = """
 ################
 请在下方直接输出重述文本，不要输出任何额外的内容。
 
@@ -99,11 +122,58 @@ TEMPLATE_ZH: str = """---角色---
 """
 
 
+MEDIUM_REQUIREMENT_EN = """
+################
+Please directly output the rephrased text below, without any additional content.
+
+Rephrased Text:
+"""
+
+HARD_REQUIREMENT_EN = """
+---Requirements---
+- Requires an in-depth exploration of complex relationships and nuances.
+- Includes detailed background information, emphasizing logical consistency and complexity.
+
+################
+Please directly output the rephrased text below, without any additional content.
+
+Rephrased Text:
+"""
+
+HARD_REQUIREMENT_ZH = """
+---要求---
+- 需要深入探讨复杂的关系和细微差别。
+- 包括详细的背景信息，强调逻辑一致性和复杂性。
+
+################
+请在下方直接输出重述文本，不要输出任何额外的内容。
+
+重述文本:
+"""
+
 ANSWER_REPHRASING_PROMPT= {
-    "English": {
-        "TEMPLATE": TEMPLATE_EN
+    "easy": {
+        "English": {
+            "TEMPLATE": TEMPLATE_EN + EASY_REQUIREMENT_EN
+        },
+        "Chinese": {
+            "TEMPLATE": TEMPLATE_ZH + EASY_REQUIREMENT_ZH
+        }
     },
-    "Chinese": {
-        "TEMPLATE": TEMPLATE_ZH
+    "medium": {
+        "English": {
+            "TEMPLATE": TEMPLATE_EN + MEDIUM_REQUIREMENT_EN
+        },
+        "Chinese": {
+            "TEMPLATE": TEMPLATE_ZH + MEDIUM_REQUIREMENT_ZH
+        }
+    },
+    "hard": {
+        "English": {
+            "TEMPLATE": TEMPLATE_EN + HARD_REQUIREMENT_EN
+        },
+        "Chinese": {
+            "TEMPLATE": TEMPLATE_ZH + HARD_REQUIREMENT_ZH
+        }
     }
 }

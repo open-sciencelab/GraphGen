@@ -2,12 +2,11 @@ import math
 import asyncio
 from tqdm.asyncio import tqdm as tqdm_async
 from models import NetworkXStorage, OpenAIModel, JsonKVStorage
-from utils import logger, yes_no_loss_entropy, detect_main_language
-from templates import DESCRIPTION_REPHRASING_PROMPT, STATEMENT_JUDGEMENT_PROMPT
+from utils import logger, yes_no_loss_entropy
+from templates import STATEMENT_JUDGEMENT_PROMPT
 
 
 async def judge_relations(
-        teacher_llm_client: OpenAIModel,
         student_llm_client: OpenAIModel,
         graph_storage: NetworkXStorage,
         rephrase_storage: JsonKVStorage,
@@ -16,7 +15,6 @@ async def judge_relations(
     """
     Get all edges and judge them
 
-    :param teacher_llm_client: generate statements
     :param student_llm_client: judge the statements to get comprehension loss
     :param graph_storage: graph storage instance
     :param rephrase_storage: rephrase storage instance

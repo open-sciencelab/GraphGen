@@ -177,8 +177,8 @@ class GraphGen:
         loop.run_until_complete(self.async_judge(re_judge))
 
     async def async_judge(self, re_judge=False):
-        _update_relations = await judge_relations(self.teacher_llm_client, self.student_llm_client,
-                                                  self.graph_storage, self.rephrase_storage, re_judge)
+        _update_relations = await judge_relations(self.student_llm_client, self.graph_storage,
+                                                  self.rephrase_storage, re_judge)
         await _update_relations.index_done_callback()
 
     def traverse(self):

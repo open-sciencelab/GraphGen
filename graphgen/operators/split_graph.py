@@ -1,10 +1,9 @@
-import asyncio
 import random
-
 from collections import defaultdict
-from models import NetworkXStorage, TraverseStrategy
 from tqdm.asyncio import tqdm as tqdm_async
-from utils import logger, create_event_loop
+from utils import logger
+
+from models import NetworkXStorage, TraverseStrategy
 
 
 async def _get_node_info(
@@ -103,7 +102,7 @@ def _get_level_n_edges_by_max_tokens(
 ) -> list:
     """
     Get level n edges for an edge.
-    n is decided by max_depth in traverse_strategy
+    n is decided by max_depth in traverse_strategy.
 
     :param edge_adj_list
     :param node_dict

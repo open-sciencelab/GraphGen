@@ -49,6 +49,14 @@ async def _pre_tokenize(graph_storage: NetworkXStorage,
     await graph_storage.index_done_callback()
     return new_edges, new_nodes
 
+
+def get_loss_tercile(losses: list) -> (float, float):
+    losses = sorted(losses)
+    q1_index = int(len(losses) * (1 / 3))
+    q2_index = int(len(losses) * (2 / 3))
+
+    return losses[q1_index], losses[q2_index]
+
 async def traverse_graph_by_edge(
     llm_client: OpenAIModel,
     tokenizer: Tokenizer,
@@ -72,6 +80,7 @@ async def traverse_graph_by_edge(
     async def _process_nodes_and_edges(
             _process_nodes: list,
             _process_edges: list,
+            _difficulty: str
     ) -> str:
         entities = [
             f"{_process_node['node_id']}: {_process_node['description']}" for _process_node in _process_nodes
@@ -85,7 +94,7 @@ async def traverse_graph_by_edge(
         relations_str = "\n".join([f"{index + 1}. {relation}" for index, relation in enumerate(relations)])
 
         language = "Chinese" if detect_main_language(entities_str + relations_str) == "zh" else "English"
-        prompt = ANSWER_REPHRASING_PROMPT[language]['TEMPLATE'].format(
+        prompt = ANSWER_REPHRASING_PROMPT[_difficulty][language]['TEMPLATE'].format(
             language=language,
             entities=entities_str,
             relationships=relations_str
@@ -105,9 +114,12 @@ async def traverse_graph_by_edge(
         _process_batch: tuple
     ) -> dict:
         async with semaphore:
+            losses = [(edge[0], edge[1], edge[2]['loss']) for edge in _process_batch[1]]
+
             context = await _process_nodes_and_edges(
                 _process_batch[0],
                 _process_batch[1],
+                _process_batch[2]
             )
 
             language = "Chinese" if detect_main_language(context) == "zh" else "English"
@@ -125,8 +137,6 @@ async def traverse_graph_by_edge(
             pre_length = sum(node['length'] for node in _process_batch[0]) \
                          + sum(edge[2]['length'] for edge in _process_batch[1])
 
-            losses = [(edge[0], edge[1], edge[2]['loss']) for edge in _process_batch[1]]
-
             logger.info("%d nodes and %d edges processed", len(_process_batch[0]), len(_process_batch[1]))
             logger.info("Pre-length: %s", pre_length)
             logger.info("Question: %s Answer: %s", question, context)
@@ -135,7 +145,8 @@ async def traverse_graph_by_edge(
                 compute_content_hash(context): {
                     "question": question,
                     "answer": context,
-                    "losses": losses
+                    "losses": losses,
+                    "difficulty": _process_batch[2],
                 }
             }
 
@@ -151,6 +162,29 @@ async def traverse_graph_by_edge(
         graph_storage,
         traverse_strategy
     )
+
+    losses = []
+    for batch in processing_batches:
+        if len(batch[1]) == 0:
+            continue
+        loss = sum(edge[2]['loss'] for edge in batch[1]) / len(batch[1])
+        losses.append(loss)
+    q1, q2 = get_loss_tercile(losses)
+
+    for i, batch in enumerate(processing_batches):
+        if len(batch[1]) == 0:
+            processing_batches[i] = (batch[0], batch[1], "easy")
+            continue
+        loss = sum(edge[2]['loss'] for edge in batch[1]) / len(batch[1])
+        if loss < q1:
+            # easy
+            processing_batches[i] = (batch[0], batch[1], "easy")
+        elif loss < q2:
+            # medium
+            processing_batches[i] = (batch[0], batch[1], "medium")
+        else:
+            # hard
+            processing_batches[i] = (batch[0], batch[1], "hard")
 
     for result in tqdm_async(asyncio.as_completed(
         [_process_single_batch(batch) for batch in processing_batches]

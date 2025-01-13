@@ -1,17 +1,20 @@
 # https://arxiv.org/pdf/2401.14367
+
 import os
 import json
 import argparse
 import asyncio
-
-from dataclasses import dataclass
-from dotenv import load_dotenv
-from models import OpenAIModel
 from typing import List
-from utils import create_event_loop, compute_content_hash
+from dataclasses import dataclass
 from tqdm.asyncio import tqdm as tqdm_async
+from dotenv import load_dotenv
 
-PROMPT_TEMPLATE = '''Instruction: Given the next [document], create a [question] and [answer] pair that are grounded in the main point of the document, don't add any additional information that is not in the document. The [question] is by an information-seeking user and the [answer] is provided by a helping AI Agent.
+from models import OpenAIModel
+from utils import create_event_loop, compute_content_hash
+
+PROMPT_TEMPLATE = '''Instruction: Given the next [document], create a [question] and [answer] pair that are grounded \
+in the main point of the document, don't add any additional information that is not in the document. The [question] is \
+by an information-seeking user and the [answer] is provided by a helping AI Agent.
 
 [document]: Scrumptious Sweet Co. factory ...
 
@@ -23,13 +26,16 @@ PROMPT_TEMPLATE = '''Instruction: Given the next [document], create a [question]
 
 ### Response:
 [question]: What is the plot of the show Schitt's Creek?
-[answer]: The show Schitt's Creek is about a wealthy family who loses their fortune and is forced to rebuild their lives in a small town. The show follows the family as they adjust to their new life in the town and learn to appreciate the simple things in life.
+[answer]: The show Schitt's Creek is about a wealthy family who loses their fortune and is forced to rebuild their \
+lives in a small town. The show follows the family as they adjust to their new life in the town and learn to \
+appreciate the simple things in life.
 
 [document]: 2016's countdown broke several Hottest 100 records ...
 
 ### Response:
 [question]: What was the most popular song on the 2016 Hottest 100?
-[answer]: The most popular song on the 2016 Hottest 100 was "Never Be Like You" by Flume. This was the first time that an electronic dance music producer topped the countdown.
+[answer]: The most popular song on the 2016 Hottest 100 was "Never Be Like You" by Flume. This was the first time that \
+an electronic dance music producer topped the countdown.
 
 [document]: In Greek mythology, Persephone ...
 
@@ -79,7 +85,7 @@ class Genie:
                     'question': question,
                     'answer': answer
                 }
-            except Exception as e:
+            except Exception as e: # pylint: disable=broad-except
                 print(f"Error: {e}")
         return final_results
 
@@ -112,15 +118,15 @@ if __name__ == "__main__":
     genie = Genie(llm_client=llm_client)
 
     if args.data_type == 'raw':
-        with open(args.input_file, "r") as f:
+        with open(args.input_file, "r", encoding='utf-8') as f:
             data = [json.loads(line) for line in f]
             data = [[chunk] for chunk in data]
     elif args.data_type == 'chunked':
-        with open(args.input_file, "r") as f:
+        with open(args.input_file, "r", encoding='utf-8') as f:
             data = json.load(f)
 
     results = genie.generate(data)
 
     # Save results
-    with open(args.output_file, "w") as f:
+    with open(args.output_file, "w", encoding='utf-8') as f:
         json.dump(results, f, indent=4, ensure_ascii=False)

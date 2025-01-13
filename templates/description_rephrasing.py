@@ -1,4 +1,4 @@
-TEMPLATE_EN: str = """-Goal-
+ANTI_TEMPLATE_EN: str = """-Goal-
 Transform the input sentence into its opposite meaning while:
 
 1. Preserving most of the original sentence structure
@@ -25,7 +25,7 @@ Input:
 Output:
 """
 
-TEMPLATE_ZH: str = """-目标-
+ANTI_TEMPLATE_ZH: str = """-目标-
 将输入句子转换为相反含义的句子，同时：
 
 1. 保留大部分原始句子结构
@@ -52,11 +52,66 @@ TEMPLATE_ZH: str = """-目标-
 输出：
 """
 
-ANTI_DESCRIPTION_REPHRASING_PROMPT= {
+TEMPLATE_ZH: str = """-目标-
+将输入句子转换为相同含义的句子，同时：
+
+1. 保留大部分原始句子结构
+2. 仅更改影响核心含义的关键词
+3. 保持相同的语气和风格
+4. 输出句子应该流畅且语法正确
+
+################
+-示例-
+################
+输入：
+明亮的阳光让每个人都感到充满活力和快乐。
+
+输出：
+明媚的阳光让每个人都感受到活力与快乐。
+
+################
+-真实数据-
+################
+输入：
+{input_sentence}
+################
+输出：
+"""
+
+TEMPLATE_EN: str = """-Goal-
+Transform the input sentence into a sentence with the same meaning while:
+
+1. Preserving most of the original sentence structure
+2. Changing only key words that affect the core meaning
+3. Maintaining the same tone and style
+4. The output sentence should be fluent and grammatically correct
+
+################
+-Examples-
+################
+Input:
+The bright sunshine made everyone feel energetic and happy.
+
+Output:
+The bright sunshine made everyone feel energetic and joyful.
+
+################
+-Real Data-
+################
+Input:
+{input_sentence}
+################
+Output:
+"""
+
+
+DESCRIPTION_REPHRASING_PROMPT= {
     "English": {
+        "ANTI_TEMPLATE": ANTI_TEMPLATE_EN,
         "TEMPLATE": TEMPLATE_EN
     },
     "Chinese": {
+        "ANTI_TEMPLATE": ANTI_TEMPLATE_ZH,
         "TEMPLATE": TEMPLATE_ZH
     }
 }

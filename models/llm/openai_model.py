@@ -71,6 +71,9 @@ class OpenAIModel(TopkTokenModel):
             kwargs["logprobs"] = True
             kwargs["top_logprobs"] = self.topk_per_token
 
+        # Limit max_tokens to 2 to avoid long completions
+        kwargs["max_tokens"] = 2
+
         completion = await self.client.chat.completions.create(
             model=self.model_name,
             **kwargs
@@ -85,8 +88,9 @@ class OpenAIModel(TopkTokenModel):
         wait=wait_exponential(multiplier=1, min=4, max=10),
         retry=retry_if_exception_type((RateLimitError, APIConnectionError, APITimeoutError)),
     )
-    async def generate_answer(self, text: str, history: Optional[List[str]] = None) -> str:
+    async def generate_answer(self, text: str, history: Optional[List[str]] = None, temperature: int = 0) -> str:
         kwargs = self._pre_generate(text, history)
+        kwargs["temperature"] = temperature
 
         completion = await self.client.chat.completions.create(
             model=self.model_name,

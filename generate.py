@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     graph_gen.insert(data, args.data_type)
 
-    graph_gen.judge(re_judge=False)
+    graph_gen.judge(re_judge=True, max_samples=3)
 
     graph_gen.traverse()
     with open(os.path.join(sys_path, "cache", "configs", f"graphgen_{unique_id}.yaml"), "w", encoding='utf-8') as f:

@@ -32,6 +32,9 @@ class GraphGen:
     graph_storage: NetworkXStorage = NetworkXStorage(
         working_dir, namespace="graph"
     )
+    rephrase_storage: JsonKVStorage = JsonKVStorage(
+        working_dir, namespace="rephrase"
+    )
     qa_storage: JsonKVStorage = JsonKVStorage(
         os.path.join(working_dir, "data", "graphgen"), namespace=f"qa-{unique_id}"
     )
@@ -159,19 +162,22 @@ class GraphGen:
             tasks.append(cast(StorageNameSpace, storage_instance).index_done_callback())
         await asyncio.gather(*tasks)
 
-    def judge(self, re_judge=False):
+    def judge(self, re_judge=False, max_samples=1):
         loop = create_event_loop()
-        loop.run_until_complete(self.async_judge(re_judge))
+        loop.run_until_complete(self.async_judge(re_judge, max_samples))
 
-    async def async_judge(self, re_judge=False):
-        _update_relations = await judge_relations(self.teacher_llm_client, self.student_llm_client, self.graph_storage, re_judge)
+    async def async_judge(self, re_judge=False, max_samples=1):
+        _update_relations = await judge_relations(self.teacher_llm_client, self.student_llm_client,
+                                                  self.graph_storage, self.rephrase_storage, re_judge, max_samples)
         await _update_relations.index_done_callback()
+        await self.rephrase_storage.index_done_callback()
 
     def traverse(self):
         loop = create_event_loop()
         loop.run_until_complete(self.async_traverse())
 
     async def async_traverse(self):
-        results = await traverse_graph_by_edge(self.teacher_llm_client, self.tokenizer_instance, self.graph_storage, self.traverse_strategy)
+        results = await traverse_graph_by_edge(self.teacher_llm_client, self.tokenizer_instance,
+                                               self.graph_storage, self.traverse_strategy)
         await self.qa_storage.upsert(results)
         await self.qa_storage.index_done_callback()

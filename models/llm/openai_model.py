@@ -71,8 +71,8 @@ class OpenAIModel(TopkTokenModel):
             kwargs["logprobs"] = True
             kwargs["top_logprobs"] = self.topk_per_token
 
-        # Limit max_tokens to 2 to avoid long completions
-        kwargs["max_tokens"] = 2
+        # Limit max_tokens to 1 to avoid long completions
+        kwargs["max_tokens"] = 1
 
         completion = await self.client.chat.completions.create(
             model=self.model_name,

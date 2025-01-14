@@ -1,3 +1,5 @@
+# pylint: disable=C0301
+
 TEMPLATE_EN: str = """You are an NLP expert, skilled at analyzing text to extract named entities and their relationships.
 
 -Goal-
@@ -174,12 +176,14 @@ TEMPLATE_ZH: str = """你是一个NLP专家，擅长分析文本提取命名实�
 输出：
 """
 
-CONTINUE_EN: str = """MANY entities and relationships were missed in the last extraction.  Add them below using the same format:
+CONTINUE_EN: str = """MANY entities and relationships were missed in the last extraction.  \
+Add them below using the same format:
 """
 
 CONTINUE_ZH: str = """很多实体和关系在上一次的提取中可能被遗漏了。请在下面使用相同的格式添加它们："""
 
-IF_LOOP_EN: str = """It appears some entities and relationships may have still been missed.  Answer YES | NO if there are still entities and relationships that need to be added.
+IF_LOOP_EN: str = """It appears some entities and relationships may have still been missed.  \
+Answer YES | NO if there are still entities and relationships that need to be added.
 """
 
 IF_LOOP_ZH: str = """看起来可能仍然遗漏了一些实体和关系。如果仍有实体和关系需要添加，请回答YES | NO。"""
@@ -199,7 +203,8 @@ KG_EXTRACTION_PROMPT: dict = {
         "tuple_delimiter": "<|>",
         "record_delimiter": "##",
         "completion_delimiter": "<|COMPLETE|>",
-        "entity_types": "concept, date, location, keyword, organization, person, event, work, nature, artificial, science, technology, mission, gene",
+        "entity_types": "concept, date, location, keyword, organization, person, event, work, nature, artificial, \
+science, technology, mission, gene",
         "language": "English",
     },
 }

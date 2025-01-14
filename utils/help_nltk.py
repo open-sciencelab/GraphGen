@@ -1,7 +1,7 @@
 import os
+from typing import Dict, List, Optional
 import nltk
 import jieba
-from typing import Dict, List, Optional
 
 resource_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources")
 
@@ -30,11 +30,10 @@ class NLTKHelper:
     def word_tokenize(text: str, lang: str) -> List[str]:
         if lang == "zh":
             return jieba.lcut(text)
-        else:
-            nltk.data.path.append(os.path.join(resource_path, "nltk_data"))
-            try:
-                nltk.data.find("tokenizers/punkt_tab")
-            except LookupError:
-                nltk.download("punkt_tab", download_dir=os.path.join(resource_path, "nltk_data"))
+        nltk.data.path.append(os.path.join(resource_path, "nltk_data"))
+        try:
+            nltk.data.find("tokenizers/punkt_tab")
+        except LookupError:
+            nltk.download("punkt_tab", download_dir=os.path.join(resource_path, "nltk_data"))
 
-            return nltk.word_tokenize(text)
+        return nltk.word_tokenize(text)

@@ -1,3 +1,5 @@
+# pylint: disable=C0301
+
 TEMPLATE: str = """-Goal-
 Please select the most relevant search result for the given entity. 
 The name and description of the entity are provided. The search results are provided as a list.

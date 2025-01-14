@@ -43,12 +43,12 @@ async def handle_single_entity_extraction(
     entity_type = clean_str(record_attributes[2].upper())
     entity_description = clean_str(record_attributes[3])
     entity_source_id = chunk_key
-    return dict(
-        entity_name=entity_name,
-        entity_type=entity_type,
-        description=entity_description,
-        source_id=entity_source_id,
-    )
+    return {
+        "entity_name": entity_name,
+        "entity_type": entity_type,
+        "description": entity_description,
+        "source_id": entity_source_id,
+    }
 
 def is_float_regex(value):
     return bool(re.match(r"^[-+]?[0-9]*\.?[0-9]+$", value))
@@ -65,12 +65,12 @@ async def handle_single_relationship_extraction(
     edge_description = clean_str(record_attributes[3])
 
     edge_source_id = chunk_key
-    return dict(
-        src_id=source,
-        tgt_id=target,
-        description=edge_description,
-        source_id=edge_source_id,
-    )
+    return {
+        "src_id": source,
+        "tgt_id": target,
+        "description": edge_description,
+        "source_id": edge_source_id,
+    }
 
 def load_json(file_name):
     if not os.path.exists(file_name):

@@ -26,8 +26,7 @@ def detect_main_language(text):
 
     if chinese_ratio >= 0.5:
         return 'zh'
-    else:
-        return 'en'
+    return 'en'
 
 def detect_if_chinese(text):
     """

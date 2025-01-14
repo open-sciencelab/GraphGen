@@ -22,6 +22,7 @@ The bright sunshine made everyone feel tired and sad.
 Input: 
 {input_sentence}
 ################
+Please directly output the rewritten sentence without any additional information.
 Output:
 """
 
@@ -49,6 +50,7 @@ ANTI_TEMPLATE_ZH: str = """-目标-
 输入：
 {input_sentence}
 ################
+请直接输出改写后的句子，不要输出任何额外信息。
 输出：
 """
 
@@ -75,6 +77,7 @@ TEMPLATE_ZH: str = """-目标-
 输入：
 {input_sentence}
 ################
+请直接输出改写后的句子，不要输出任何额外信息。
 输出：
 """
 
@@ -101,6 +104,7 @@ The bright sunshine made everyone feel energetic and joyful.
 Input:
 {input_sentence}
 ################
+Please directly output the rewritten sentence without any additional information.
 Output:
 """
 

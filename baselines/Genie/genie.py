@@ -49,10 +49,11 @@ an electronic dance music producer topped the countdown.
 
 
 def _post_process(content: str) -> tuple:
-    lines = content.split('\n')
-    question = lines[0].split('[question]: ')[1]
-    answer = lines[1].split('[answer]: ')[1]
-    return question, answer
+    if "[question]:" in content and "[answer]:" in content:
+        question = content.split('[question]: ')[1].split('[answer]: ')[0]
+        answer = content.split('[answer]: ')[1]
+        return question, answer
+    return None, None
 
 
 @dataclass
@@ -81,10 +82,11 @@ class Genie:
         for result in tqdm_async(asyncio.as_completed(tasks), total=len(tasks), desc="Generating using Genie"):
             try:
                 question, answer = _post_process(await result)
-                final_results[compute_content_hash(question)] = {
-                    'question': question,
-                    'answer': answer
-                }
+                if question and answer:
+                    final_results[compute_content_hash(question)] = {
+                        'question': question,
+                        'answer': answer
+                    }
             except Exception as e: # pylint: disable=broad-except
                 print(f"Error: {e}")
         return final_results

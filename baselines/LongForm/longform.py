@@ -3,15 +3,16 @@
 
 import os
 import json
-from dotenv import load_dotenv
+from dataclasses import dataclass
 import argparse
 import asyncio
-
-from dataclasses import dataclass
-from models import OpenAIModel
 from typing import List
-from utils import create_event_loop, compute_content_hash
 from tqdm.asyncio import tqdm as tqdm_async
+from dotenv import load_dotenv
+
+from models import OpenAIModel
+from utils import create_event_loop, compute_content_hash
+
 
 PROMPT_TEMPLATE = '''Instruction: X
 Output:{doc}
@@ -28,7 +29,7 @@ class LongForm:
         loop = create_event_loop()
         return loop.run_until_complete(self.async_generate(docs))
 
-    async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
+    async def async_generate(self, docs: List[List[dict]]) -> dict:
         final_results = {}
         semaphore = asyncio.Semaphore(self.max_concurrent)
 
@@ -51,7 +52,7 @@ class LongForm:
             try:
                 qa = await result
                 final_results.update(qa)
-            except Exception as e:
+            except Exception as e: # pylint: disable=broad-except
                 print(f"Error: {e}")
         return final_results
 
@@ -84,15 +85,15 @@ if __name__ == "__main__":
     longform = LongForm(llm_client=llm_client)
 
     if args.data_type == 'raw':
-        with open(args.input_file, "r") as f:
+        with open(args.input_file, "r", encoding='utf-8') as f:
             data = [json.loads(line) for line in f]
             data = [[chunk] for chunk in data]
     elif args.data_type == 'chunked':
-        with open(args.input_file, "r") as f:
+        with open(args.input_file, "r", encoding='utf-8') as f:
             data = json.load(f)
 
     results = longform.generate(data)
 
     # Save results
-    with open(args.output_file, "w") as f:
+    with open(args.output_file, "w", encoding='utf-8') as f:
         json.dump(results, f, indent=4, ensure_ascii=False)

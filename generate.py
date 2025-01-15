@@ -80,7 +80,7 @@ if __name__ == '__main__':
     graph_gen.traverse()
 
     config_path = os.path.join(sys_path, "cache", "configs", f"graphgen_{unique_id}.yaml")
-    if not os.path.exists(config_path):
-        os.makedirs(config_path)
+    if not os.path.exists(os.path.dirname(config_path)):
+        os.makedirs(os.path.dirname(config_path))
     with open(config_path, "w", encoding='utf-8') as f:
         yaml.dump(traverse_strategy.to_yaml(), f)

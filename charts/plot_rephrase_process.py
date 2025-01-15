@@ -1,6 +1,6 @@
 import re
-import plotly.express as px
 from collections import defaultdict
+import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 from tqdm import tqdm

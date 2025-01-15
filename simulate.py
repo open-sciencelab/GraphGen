@@ -5,11 +5,11 @@ import os
 import json
 import gradio as gr
 
-from models import TraverseStrategy, NetworkXStorage
-from charts.plot_rephrase_process import plot_pre_length_distribution, plot_post_synth_length_distribution
+from models import TraverseStrategy, NetworkXStorage, Tokenizer
+from charts import plot_pre_length_distribution, plot_post_synth_length_distribution, plot_loss_distribution
 from graphgen.operators.split_graph import get_batches_with_strategy
 from utils import create_event_loop
-from models import Tokenizer
+
 
 if __name__ == "__main__":
     networkx_storage = NetworkXStorage(
@@ -152,5 +152,35 @@ if __name__ == "__main__":
                 inputs=[input_file],
                 outputs=[output_plot]
             )
+
+        with gr.Tab("After Judgement"):
+            with gr.Row():
+                with gr.Column():
+                    file_list = os.listdir("cache/data/graphgen")
+                    input_file = gr.Dropdown(choices=file_list, label="Input File")
+                    file_button = gr.Button("Submit File")
+
+            with gr.Row():
+                output_plot = gr.Plot(label="Graph Visualization")
+
+            def judge_graph(file):
+                with open(f"cache/data/graphgen/{file}", "r", encoding='utf-8') as f:
+                    data = json.load(f)
+                stats = []
+                for key in data:
+                    item = data[key]
+                    item['average_loss'] = sum(loss[2] for loss in item['losses']) / len(item['losses'])
+                    stats.append({
+                        'average_loss': item['average_loss']
+                    })
+                fig = plot_loss_distribution(stats)
+                return fig
+
+            file_button.click(
+                fn=judge_graph,
+                inputs=[input_file],
+                outputs=[output_plot]
+            )
+
 
     app.launch()

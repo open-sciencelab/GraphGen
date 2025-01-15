@@ -1,8 +1,9 @@
 # Rewrite from https://github.com/ZitongYang/Synthetic_Continued_Pretraining/blob/main/tasks/quality.py
+
 import json
 from hashlib import md5
 
-from .task_abc import Document, Task
+from baselines.EntiGraph.tasks.task_abc import Document, Task
 from baselines.EntiGraph.entigraph_utils.prompt_utils import (
                                 OPENAI_API_SYSTEM_QUALITY_GENERATE_ENTITIES,
                                 OPENAI_API_SYSTEM_QUALITY_GENERATE_TWO_ENTITY_RELATIONS,
@@ -16,14 +17,19 @@ class BaselineTask(Task):
     openai_system_quality_qa_sft = OPENAI_API_SYSTEM_QUALITY_QA_SFT
     llama_cot_prompt = QUALITY_FEW_SHOT_COT_PROMPT
 
+    def __init__(self, input_file: str, data_type: str):
+        self._data = self._load_split(input_file, data_type)
+        self._create_documents()
+        self._dedup()
+
     @staticmethod
     def _load_split(input_file: str, data_type: str):
         if data_type == 'raw':
-            with open(input_file, "r") as f:
+            with open(input_file, "r", encoding='utf-8') as f:
                 data = [json.loads(line) for line in f]
                 data = [[chunk] for chunk in data]
         elif data_type == 'chunked':
-            with open(input_file, "r") as f:
+            with open(input_file, "r", encoding='utf-8') as f:
                 data = json.load(f)
 
         documents = []
@@ -48,11 +54,6 @@ class BaselineTask(Task):
 
         self.documents = list(deuped_documents.values())
 
-
-    def __init__(self, input_file: str, data_type: str):
-        self._data = self._load_split(input_file, data_type)
-        self._create_documents()
-        self._dedup()
 
     def performance_stats(self):
         pass

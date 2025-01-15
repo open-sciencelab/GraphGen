@@ -1,3 +1,5 @@
+# pylint: disable=C0301
+
 QUALITY_FEW_SHOT_COT_PROMPT = """## Example 1
 ### Question
 In the context of "Les Misérables", written by Victor Hugo in 1862, what is the main setting of the novel? There is only one correct choice.

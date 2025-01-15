@@ -3,14 +3,14 @@
 
 import os
 import json
+import random
 import asyncio
 import argparse
 from hashlib import md5
-
-from .inference.devapi import gptqa
-from .tasks.baseline_task import BaselineTask
-import random
 from tqdm.asyncio import tqdm as tqdm_async
+
+from baselines.EntiGraph.inference.devapi import gptqa
+from baselines.EntiGraph.tasks.baseline_task import BaselineTask
 
 
 def compute_content_hash(content, prefix: str = ""):
@@ -37,7 +37,7 @@ async def generate_entities(document_content: str,
             response = json.loads(completion)
             can_read_entities = response['entities']
             return response
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             print(f"Failed to generate entities: {str(e)}")
             max_tries -= 1
 
@@ -101,17 +101,21 @@ async def generate_synthetic_data_for_document(input_file, data_type):
 
     async def generate_document_entities(doc):
         async with semaphore:
-            entities = await generate_entities(
-                doc.text,
-                task.openai_system_generate_entities,
-                model_name)
-            if not entities:
+            try:
+                entities = await generate_entities(
+                    doc.text,
+                    task.openai_system_generate_entities,
+                    model_name)
+                if not entities:
+                    return None
+                return {
+                    'document': doc.text,
+                    'entities': entities['entities'],
+                    'summary': entities['summary']
+                }
+            except Exception as e: # pylint: disable=broad-except
+                print(f"Error: {e}")
                 return None
-            return {
-                'document': doc.text,
-                'entities': entities['entities'],
-                'summary': entities['summary']
-            }
 
     entities_list = []
     for result in tqdm_async(
@@ -128,23 +132,28 @@ async def generate_synthetic_data_for_document(input_file, data_type):
     for doc in entities_list:
         entities = doc['entities']
         temp = []
-        for i in range(len(entities)):
+        for i, entity_i in enumerate(entities):
             for j in range(i + 1, len(entities)):
-                pair = (doc['document'], entities[i], entities[j])
+                entity_j = entities[j]
+                pair = (doc['document'], entity_i, entity_j)
                 temp.append(pair)
 
-        # 由于数量太多，会产生很多垃圾数据，增加计算成本，因此限制同一个文档随机选10个
+        # Compute all possible combinations of entities is impractical, so we randomly sample 10 pairs
         pair_list.extend(random.sample(temp, min(len(temp), 10)))
 
 
     async def process_two_entity_relations(pair):
         async with semaphore:
-            document, entity1, entity2 = pair
-            response = await generate_two_entity_relations(
-                document, entity1, entity2,
-                task.openai_system_generate_two_entity_relations,
-                model_name)
-            return response
+            try:
+                document, entity1, entity2 = pair
+                response = await generate_two_entity_relations(
+                    document, entity1, entity2,
+                    task.openai_system_generate_two_entity_relations,
+                    model_name)
+                return response
+            except Exception as e: # pylint: disable=broad-except
+                print(f"Error: {e}")
+                return None
 
     corpus= []
     for result in tqdm_async(
@@ -152,7 +161,9 @@ async def generate_synthetic_data_for_document(input_file, data_type):
             total=len(pair_list),
             desc="Generating two entity relations"
     ):
-        corpus.append(await result)
+        result = await result
+        if result:
+            corpus.append(result)
 
     # triple_list = []
     # for doc in entities_list:
@@ -196,8 +207,9 @@ async def generate_synthetic_data_for_document(input_file, data_type):
     ):
         try:
             result = await result
-            qa_sft_results.update(_post_process_synthetic_data(result))
-        except Exception as e:
+            if result:
+                qa_sft_results.update(_post_process_synthetic_data(result))
+        except Exception as e: # pylint: disable=broad-except
             print(f"Error: {e}")
 
     return qa_sft_results
@@ -225,5 +237,5 @@ if __name__ == '__main__':
     results = loop.run_until_complete(generate_synthetic_data_for_document(args.input_file, args.data_type))
 
     # Save results
-    with open(args.output_file, "w") as f:
+    with open(args.output_file, "w", encoding='utf-8') as f:
         json.dump(results, f, indent=4, ensure_ascii=False)

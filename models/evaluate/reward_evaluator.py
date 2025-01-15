@@ -1,12 +1,17 @@
 from dataclasses import dataclass
-from .base_evaluator import BaseEvaluator
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+from models.evaluate.base_evaluator import BaseEvaluator
 from models.text.text_pair import TextPair
 from utils import create_event_loop
 
 
 @dataclass
 class RewardEvaluator(BaseEvaluator):
+    """
+    Reward Model Evaluator.
+    OpenAssistant/reward-model-deberta-v3-large-v2: 分数范围为[-inf, inf]，越高越好
+    """
     reward_name: str = "OpenAssistant/reward-model-deberta-v3-large-v2"
     max_length: int = 1024
 

@@ -91,10 +91,10 @@ if __name__ == '__main__':
 
     results = []
 
-    logger.info(f"Data loaded from {args.folder}")
+    logger.info("Data loaded from %s", args.folder)
     for file in os.listdir(args.folder):
         if file.endswith('.json'):
-            logger.info(f"Processing {file}")
+            logger.info("Processing %s", file)
             with open(os.path.join(args.folder, file), 'r', encoding='utf-8') as f:
                 data = json.load(f)
             data = [TextPair(

@@ -39,7 +39,7 @@ async def plot_network(kg_instance: NetworkXStorage):
             }
         })
 
-    categories = list(set([node['category'] for node in nodes]))
+    categories = list({node['category'] for node in nodes})
 
     for node in nodes:
         node['category'] = categories.index(node['category'])
@@ -75,4 +75,3 @@ if __name__ == "__main__":
 
     import asyncio
     asyncio.run(plot_network(networkx_storage))
-

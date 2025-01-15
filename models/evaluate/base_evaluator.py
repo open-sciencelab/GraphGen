@@ -1,8 +1,8 @@
 import asyncio
 
 from dataclasses import dataclass
-from utils import create_event_loop
 from tqdm.asyncio import tqdm as tqdm_async
+from utils import create_event_loop
 from models.text.text_pair import TextPair
 
 @dataclass

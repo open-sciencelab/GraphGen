@@ -1,14 +1,15 @@
 # https://github.com/maszhongming/UniEval/tree/main
 
 import torch
-import torch.nn as nn
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from .base_evaluator import BaseEvaluator
+from torch import nn
 from dataclasses import dataclass, field
-from utils import create_event_loop
-from models.text.text_pair import TextPair
 import asyncio
 from tqdm.asyncio import tqdm as tqdm_async
+
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from models.evaluate.base_evaluator import BaseEvaluator
+from utils import create_event_loop
+from models.text.text_pair import TextPair
 
 
 @dataclass

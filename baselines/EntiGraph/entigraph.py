@@ -135,6 +135,8 @@ async def generate_synthetic_data_for_document(input_file, data_type):
         entities = doc['entities']
         temp = []
         for i, entity_i in enumerate(entities):
+            if i == len(entities) - 1:
+                break
             for j in range(i + 1, len(entities)):
                 entity_j = entities[j]
                 pair = (doc['document'], entity_i, entity_j)

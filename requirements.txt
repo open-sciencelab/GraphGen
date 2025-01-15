@@ -16,3 +16,4 @@ plotly
 pandas
 gradio
 kaleido
+pyyaml

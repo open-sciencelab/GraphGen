@@ -7,6 +7,8 @@ import random
 import asyncio
 import argparse
 from hashlib import md5
+
+from statsmodels.graphics.tukeyplot import results
 from tqdm.asyncio import tqdm as tqdm_async
 
 from baselines.EntiGraph.inference.devapi import gptqa
@@ -233,8 +235,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    loop = asyncio.get_event_loop()
-    results = loop.run_until_complete(generate_synthetic_data_for_document(args.input_file, args.data_type))
+    results = asyncio.run(generate_synthetic_data_for_document(args.input_file, args.data_type))
 
     # Save results
     with open(args.output_file, "w", encoding='utf-8') as f:

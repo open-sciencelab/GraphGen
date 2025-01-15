@@ -4,13 +4,13 @@ import os
 import json
 import argparse
 import asyncio
-from dotenv import load_dotenv
-from models import OpenAIModel
-
 from dataclasses import dataclass
 from typing import List
-from utils import create_event_loop, compute_content_hash
+from dotenv import load_dotenv
 from tqdm.asyncio import tqdm as tqdm_async
+
+from models import OpenAIModel
+from utils import create_event_loop, compute_content_hash
 
 
 PROMPT_TEMPLATE = '''A chat between a curious user and an artificial intelligence assistant.
@@ -37,7 +37,7 @@ def _post_process(content: str) -> list:
                 question = item.split('Question:')[1].split('Answer:')[0].strip()
                 answer = item.split('Answer:')[1].strip()
                 qas.append((question, answer))
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             print(f"Error: {e}")
             continue
     return qas
@@ -52,7 +52,7 @@ class Wrap:
         loop = create_event_loop()
         return loop.run_until_complete(self.async_generate(docs))
 
-    async def async_generate(self, docs: List[List[dict]]) -> List[dict]:
+    async def async_generate(self, docs: List[List[dict]]) -> dict:
         final_results = {}
         semaphore = asyncio.Semaphore(self.max_concurrent)
 
@@ -74,7 +74,7 @@ class Wrap:
                         'question': qa[0],
                         'answer': qa[1]
                     }
-            except Exception as e:
+            except Exception as e: # pylint: disable=broad-except
                 print(f"Error: {e}")
         return final_results
 
@@ -108,15 +108,15 @@ if __name__ == "__main__":
     wrap = Wrap(llm_client=llm_client)
 
     if args.data_type == 'raw':
-        with open(args.input_file, "r") as f:
+        with open(args.input_file, "r", encoding='utf-8') as f:
             data = [json.loads(line) for line in f]
             data = [[chunk] for chunk in data]
     elif args.data_type == 'chunked':
-        with open(args.input_file, "r") as f:
+        with open(args.input_file, "r", encoding='utf-8') as f:
             data = json.load(f)
 
     results = wrap.generate(data)
 
     # Save results
-    with open(args.output_file, "w") as f:
+    with open(args.output_file, "w", encoding='utf-8') as f:
         json.dump(results, f, indent=4, ensure_ascii=False)

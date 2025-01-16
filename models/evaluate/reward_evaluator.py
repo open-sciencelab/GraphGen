@@ -15,6 +15,7 @@ class RewardEvaluator:
     """
     reward_name: str = "OpenAssistant/reward-model-deberta-v3-large-v2"
     max_length: int = 2560
+    results: list[float] = None
 
     def __post_init__(self):
         self.num_gpus = torch.cuda.device_count()
@@ -87,4 +88,14 @@ class RewardEvaluator:
         """
         Get the average score of a batch of texts.
         """
-        return sum(self.evaluate(pairs)) / len(pairs)
+        results = self.evaluate(pairs)
+        self.results = results
+        return sum(self.results) / len(pairs)
+
+    def get_min_max_score(self, pairs: list[TextPair]) -> tuple[float, float]:
+        """
+        Get the min and max score of a batch of texts.
+        """
+        if self.results is None:
+            self.get_average_score(pairs)
+        return min(self.results), max(self.results)

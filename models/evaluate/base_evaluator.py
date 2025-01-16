@@ -8,6 +8,7 @@ from models.text.text_pair import TextPair
 @dataclass
 class BaseEvaluator:
     max_concurrent: int = 100
+    results: list[float] = None
 
     def evaluate(self, pairs: list[TextPair]) -> list[float]:
         """
@@ -37,4 +38,14 @@ class BaseEvaluator:
         """
         Get the average score of a batch of texts.
         """
-        return sum(self.evaluate(pairs)) / len(pairs)
+        results = self.evaluate(pairs)
+        self.results = results
+        return sum(self.results) / len(pairs)
+
+    def get_min_max_score(self, pairs: list[TextPair]) -> tuple[float, float]:
+        """
+        Get the min and max score of a batch of texts.
+        """
+        if self.results is None:
+            self.get_average_score(pairs)
+        return min(self.results), max(self.results)

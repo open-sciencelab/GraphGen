@@ -28,6 +28,7 @@ class UniEvaluator:
     model_name: str = "MingZhong/unieval-sum"
     dimensions: list = field(default_factory=lambda: ['naturalness', 'coherence', 'understandability'])
     max_length: int = 2560
+    results: dict = None
 
     def __post_init__(self):
         self.num_gpus = torch.cuda.device_count()
@@ -143,4 +144,16 @@ class UniEvaluator:
         for result in results:
             for key, value in result.items():
                 final_results[key] = sum(value) / len(value)
+        self.results = final_results
+        return final_results
+
+    def get_min_max_score(self, pairs: list[TextPair]) -> dict:
+        """
+        Get the min and max score of a batch of texts.
+        """
+        if self.results is None:
+            self.get_average_score(pairs)
+        final_results = {}
+        for key, value in self.results.items():
+            final_results[key] = min(value), max(value)
         return final_results

@@ -29,7 +29,9 @@ def evaluate_mtld(corpus):
     logger.info("MTLD evaluator loaded")
     scores = mtld_evaluator.get_average_score(corpus)
     logger.info("MTLD scores: %s", scores)
-    return scores
+    min_max_scores = mtld_evaluator.get_min_max_score(corpus)
+    logger.info("MTLD min max scores: %s", min_max_scores)
+    return scores, min_max_scores
 
 def evaluate_reward(corpus, reward_model_names):
     scores = []
@@ -38,11 +40,15 @@ def evaluate_reward(corpus, reward_model_names):
             reward_name=reward_name
         )
         logger.info("Loaded reward model: %s", reward_name)
+        average_score = reward_evaluator.get_average_score(corpus)
+        logger.info("%s scores: %s", reward_name, average_score)
+        min_max_scores = reward_evaluator.get_min_max_score(corpus)
+        logger.info("%s min max scores: %s", reward_name, min_max_scores)
         scores.append({
             'reward_name': reward_name.split('/')[-1],
-            'score': reward_evaluator.get_average_score(corpus)
+            'score': average_score,
+            'min_max_scores': min_max_scores
         })
-        logger.info("%s scores: %s", reward_name, scores[-1]['score'])
         del reward_evaluator
         clean_gpu_cache()
     return scores
@@ -55,9 +61,13 @@ def evaluate_uni(corpus, uni_model_name):
     uni_scores = uni_evaluator.get_average_score(corpus)
     for key, value in uni_scores.items():
         logger.info("Uni %s scores: %s", key, value)
+    min_max_scores = uni_evaluator.get_min_max_score(corpus)
+    for key, value in min_max_scores.items():
+        logger.info("Uni %s min max scores: %s", key, value)
     del uni_evaluator
     clean_gpu_cache()
-    return uni_scores['naturalness'], uni_scores['coherence'], uni_scores['understandability']
+    return (uni_scores['naturalness'], uni_scores['coherence'], uni_scores['understandability'],
+            min_max_scores['naturalness'], min_max_scores['coherence'], min_max_scores['understandability'])
 
 
 def clean_gpu_cache():
@@ -103,21 +113,28 @@ if __name__ == '__main__':
             ) for key in data]
 
             length_scores = evaluate_length(data, args.tokenizer)
-            mtld_scores = evaluate_mtld(data)
+            mtld_scores, min_max_mtld_scores = evaluate_mtld(data)
             reward_scores = evaluate_reward(data, reward_models)
-            uni_naturalness_scores, uni_coherence_scores, uni_understandability_scores = evaluate_uni(data, args.uni)
+            uni_naturalness_scores, uni_coherence_scores, uni_understandability_scores, \
+            min_max_uni_naturalness_scores, min_max_uni_coherence_scores, min_max_uni_understandability_scores \
+                = evaluate_uni(data, args.uni)
 
             result = {
                 'file': file,
                 'number': len(data),
                 'length': length_scores,
                 'mtld': mtld_scores,
+                'mtld_min_max': min_max_mtld_scores,
                 'uni_naturalness': uni_naturalness_scores,
                 'uni_coherence': uni_coherence_scores,
-                'uni_understandability': uni_understandability_scores
+                'uni_understandability': uni_understandability_scores,
+                'uni_naturalness_min_max': min_max_uni_naturalness_scores,
+                'uni_coherence_min_max': min_max_uni_coherence_scores,
+                'uni_understandability_min_max': min_max_uni_understandability_scores
             }
             for reward_score in reward_scores:
                 result[reward_score['reward_name']] = reward_score['score']
+                result[f"{reward_score['reward_name']}_min_max"] = reward_score['min_max_scores']
 
             results.append(result)
 

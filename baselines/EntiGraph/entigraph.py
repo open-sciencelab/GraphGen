@@ -8,7 +8,6 @@ import asyncio
 import argparse
 from hashlib import md5
 
-from statsmodels.graphics.tukeyplot import results
 from tqdm.asyncio import tqdm as tqdm_async
 
 from baselines.EntiGraph.inference.devapi import gptqa
@@ -90,6 +89,7 @@ def _post_process_synthetic_data(data):
                 "question": question,
                 "answer": answer
             }
+        break
     return qas
 
 

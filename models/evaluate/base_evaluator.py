@@ -17,11 +17,11 @@ class BaseEvaluator:
 
     async def async_evaluate(self, pairs: list[TextPair]) -> list[float]:
         semaphore = asyncio.Semaphore(self.max_concurrent)
-        
+
         async def evaluate_with_semaphore(pair):
             async with semaphore:  # 获取Semaphore
                 return await self.evaluate_single(pair)
-        
+
         results = []
         for result in tqdm_async(
             asyncio.as_completed([evaluate_with_semaphore(pair) for pair in pairs]),

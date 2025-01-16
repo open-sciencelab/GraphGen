@@ -1,124 +1,146 @@
 # https://github.com/maszhongming/UniEval/tree/main
 
+from dataclasses import dataclass, field
+from tqdm import tqdm
 import torch
 from torch import nn
-from dataclasses import dataclass, field
-import asyncio
-from tqdm.asyncio import tqdm as tqdm_async
+import torch.multiprocessing as mp
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from models.evaluate.base_evaluator import BaseEvaluator
-from utils import create_event_loop
-from models.text.text_pair import TextPair
+from models import TextPair
 
+
+def _add_questions(dimension: str, question: str, answer: str):
+    if dimension == "naturalness":
+        cur_input = 'question: Is this a natural response in the dialogue? </s> response: ' + answer
+    elif dimension == "coherence":
+        cur_input = 'question: Is this a coherent response given the dialogue history? </s> response: ' \
+                    + answer + ' </s> dialogue history: ' + question
+    elif dimension == "understandability":
+        cur_input = 'question: Is this an understandable response in the dialogue? </s> response: ' + answer
+    else:
+        raise NotImplementedError(
+            'The input format for this dimension is still undefined. Please customize it first.')
+    return cur_input
 
 @dataclass
-class UniEvaluator(BaseEvaluator):
+class UniEvaluator:
     model_name: str = "MingZhong/unieval-sum"
     dimensions: list = field(default_factory=lambda: ['naturalness', 'coherence', 'understandability'])
-    max_length: int = 1024
+    max_length: int = 2560
 
     def __post_init__(self):
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        self.num_gpus = torch.cuda.device_count()
 
-        self.model.eval()
-        self.model.to("cuda")
+    @staticmethod
+    def process_chunk(rank, pairs, model_name, max_length, dimension, return_dict):
+        device = f'cuda:{rank}'
+        torch.cuda.set_device(rank)
 
-        self.softmax = nn.Softmax(dim=1)
+        rank_model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        rank_model.to(device)
+        rank_model.eval()
 
-        self.pos_id = self.tokenizer("Yes")["input_ids"][0]
-        self.neg_id = self.tokenizer("No")["input_ids"][0]
+        softmax = nn.Softmax(dim=1)
 
-    def evaluate(self, pairs: list[TextPair], dimension: str) -> list[float]:
-        """
-        Evaluate the text and return a score.
-        """
-        return create_event_loop().run_until_complete(self.async_evaluate(pairs, dimension))
-
-    async def async_evaluate(self, pairs: list[TextPair], dimension: str) -> list[float]:
-        semaphore = asyncio.Semaphore(self.max_concurrent)
-
-        async def evaluate_with_semaphore(pair):
-            async with semaphore:
-                return await self.evaluate_single(pair, dimension)
+        pos_id = tokenizer("Yes")["input_ids"][0]
+        neg_id = tokenizer("No")["input_ids"][0]
 
         results = []
-        for result in tqdm_async(
-                asyncio.as_completed([evaluate_with_semaphore(pair) for pair in pairs]),
-                total=len(pairs),
-        ):
-            results.append(await result)
-        return results
+        with torch.no_grad():
+            for pair in tqdm(pairs):
+                text = _add_questions(dimension, pair.question, pair.answer)
 
-    async def evaluate_single(self, pair: TextPair, dimension: str) -> float:
-        text = self._add_questions(dimension, pair.question, pair.answer)
-        loop = create_event_loop()
-        return await loop.run_in_executor(None, self._score, text)
+                tgt = "No"
 
-    def get_average_score(self, pairs: list[TextPair], dimension: str) -> float:
+                encoded_src = tokenizer(
+                    text,
+                    max_length=max_length,
+                    truncation=True,
+                    padding=True,
+                    return_tensors='pt'
+                )
+                encoded_tgt = tokenizer(
+                    tgt,
+                    max_length=max_length,
+                    truncation=True,
+                    padding=True,
+                    return_tensors='pt'
+                )
+
+                src_tokens = encoded_src['input_ids'].to(device)
+                src_mask = encoded_src['attention_mask'].to(device)
+
+                tgt_tokens = encoded_tgt['input_ids'].to(device)[:, 0].unsqueeze(-1)
+
+                output = rank_model(
+                    input_ids=src_tokens,
+                    attention_mask=src_mask,
+                    labels=tgt_tokens,
+                    use_cache = False
+                )
+
+                logits = output.logits.view(-1, rank_model.config.vocab_size)
+
+                pos_score = softmax(logits)[:, pos_id]  # Yes
+                neg_score = softmax(logits)[:, neg_id]
+                score = pos_score / (pos_score + neg_score)
+
+                results.append(score.item())
+
+        return_dict[rank] = results
+
+    def evaluate(self, pairs: list[TextPair]) -> list[dict]:
+        final_results = []
+        for dimension in self.dimensions:
+            chunk_size = len(pairs) // self.num_gpus
+            chunks = []
+            for i in range(self.num_gpus):
+                start = i * chunk_size
+                end = start + chunk_size
+                if i == self.num_gpus - 1:
+                    end = len(pairs)
+                chunks.append(pairs[start:end])
+
+            # multi-process
+            manager = mp.Manager()
+            return_dict = manager.dict()
+            processes = []
+
+            for rank, chunk in enumerate(chunks):
+                p = mp.Process(
+                    target=self.process_chunk,
+                    args=(rank, chunk, self.model_name, self.max_length, dimension, return_dict)
+                )
+                p.start()
+                processes.append(p)
+
+            for p in processes:
+                p.join()
+
+            # 合并结果
+            results = []
+            for rank in range(len(chunks)):
+                results.extend(return_dict[rank])
+
+            for p in processes:
+                if p.is_alive():
+                    p.terminate()
+                    p.join()
+
+            final_results.append({
+                dimension: results
+            })
+        return final_results
+
+    def get_average_score(self, pairs: list[TextPair]) -> dict:
         """
         Get the average score of a batch of texts.
         """
-        return sum(self.evaluate(pairs, dimension)) / len(pairs)
-
-    def _score(self, text: str) -> float:
-        """
-            Get scores for the given samples.
-            final_score = postive_score / (postive_score + negative_score)
-        """
-
-        # The implementation of "forward" in T5 still requires decoder_input_ids.
-        # Therefore, we construct a random one-word target sequence.
-        # The content of the target has no effect on the final scores.
-
-        tgt = "No"
-
-        with torch.no_grad():
-            encoded_src = self.tokenizer(
-                text,
-                max_length=self.max_length,
-                truncation=True,
-                padding=True,
-                return_tensors='pt'
-            )
-            encoded_tgt = self.tokenizer(
-                tgt,
-                max_length=self.max_length,
-                truncation=True,
-                padding=True,
-                return_tensors='pt'
-            )
-
-            src_tokens = encoded_src['input_ids'].to("cuda")
-            src_mask = encoded_src['attention_mask'].to("cuda")
-
-            tgt_tokens = encoded_tgt['input_ids'].to("cuda")[:, 0].unsqueeze(-1)
-
-            output = self.model(
-                input_ids=src_tokens,
-                attention_mask=src_mask,
-                labels=tgt_tokens
-            )
-
-            logits = output.logits.view(-1, self.model.config.vocab_size)
-
-            pos_score = self.softmax(logits)[:, self.pos_id]  # Yes
-            neg_score = self.softmax(logits)[:, self.neg_id]
-
-            score = pos_score / (pos_score + neg_score)
-
-        return score.item()
-
-    def _add_questions(self, dimension: str, question: str, answer: str):
-        if dimension == "naturalness":
-            cur_input = 'question: Is this a natural response in the dialogue? </s> response: ' + answer
-        elif dimension == "coherence":
-            cur_input = 'question: Is this a coherent response given the dialogue history? </s> response: ' \
-                        + answer + ' </s> dialogue history: ' + question
-        elif dimension == "understandability":
-            cur_input = 'question: Is this an understandable response in the dialogue? </s> response: ' + answer
-        else:
-            raise NotImplementedError(
-                'The input format for this dimension is still undefined. Please customize it first.')
-        return cur_input
+        results = self.evaluate(pairs)
+        final_results = {}
+        for result in results:
+            for key, value in result.items():
+                final_results[key] = sum(value) / len(value)
+        return final_results

@@ -3,9 +3,10 @@
 import os
 import json
 import argparse
-import torch
 import pandas as pd
 from dotenv import load_dotenv
+import torch
+import torch.multiprocessing as mp
 from models import LengthEvaluator, MTLDEvaluator, RewardEvaluator, TextPair, UniEvaluator
 from utils import logger, set_logger
 
@@ -51,15 +52,12 @@ def evaluate_uni(corpus, uni_model_name):
         model_name=uni_model_name
     )
     logger.info("Uni evaluator loaded with model %s", uni_model_name)
-    naturalness_scores = uni_evaluator.get_average_score(corpus, 'naturalness')
-    logger.info("Uni naturalness scores: %s", naturalness_scores)
-    coherence_scores = uni_evaluator.get_average_score(corpus, 'coherence')
-    logger.info("Uni coherence scores: %s", coherence_scores)
-    understandability_scores = uni_evaluator.get_average_score(corpus, 'understandability')
-    logger.info("Uni understandability scores: %s", understandability_scores)
+    uni_scores = uni_evaluator.get_average_score(corpus)
+    for key, value in uni_scores.items():
+        logger.info("Uni %s scores: %s", key, value)
     del uni_evaluator
     clean_gpu_cache()
-    return naturalness_scores, coherence_scores, understandability_scores
+    return uni_scores['naturalness'], uni_scores['coherence'], uni_scores['understandability']
 
 
 def clean_gpu_cache():
@@ -92,6 +90,8 @@ if __name__ == '__main__':
     results = []
 
     logger.info("Data loaded from %s", args.folder)
+    mp.set_start_method('spawn')
+
     for file in os.listdir(args.folder):
         if file.endswith('.json'):
             logger.info("Processing %s", file)

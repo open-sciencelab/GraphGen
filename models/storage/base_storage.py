@@ -1,8 +1,6 @@
-import numpy as np
-
 from dataclasses import dataclass
-from models.embed.embedding import EmbeddingFunc
 from typing import Union, Generic, TypeVar
+from models.embed.embedding import EmbeddingFunc
 
 T = TypeVar("T")
 
@@ -95,6 +93,3 @@ class BaseGraphStorage(StorageNameSpace):
 
     async def delete_node(self, node_id: str):
         raise NotImplementedError
-
-    async def embed_nodes(self, algorithm: str) -> tuple[np.ndarray, list[str]]:
-        raise NotImplementedError("Node embedding is not used in lightrag.")

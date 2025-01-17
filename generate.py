@@ -73,7 +73,7 @@ if __name__ == '__main__':
 
     graph_gen.insert(data, args.data_type)
 
-    graph_gen.quiz(max_samples=3)
+    graph_gen.quiz(max_samples=2)
 
     graph_gen.judge(re_judge=False)
 

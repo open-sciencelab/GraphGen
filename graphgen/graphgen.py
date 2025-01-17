@@ -10,7 +10,7 @@ from tqdm.asyncio import tqdm as tqdm_async
 from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch, Tokenizer, TraverseStrategy
 from models.storage.base_storage import StorageNameSpace
 from utils import create_event_loop, logger, compute_content_hash
-from .operators import extract_kg, search_wikipedia, quiz_relations, judge_relations, traverse_graph_by_edge
+from .operators import extract_kg, search_wikipedia, quiz, judge_statement, traverse_graph_by_edge
 
 
 sys_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -169,7 +169,7 @@ class GraphGen:
         loop.run_until_complete(self.async_quiz(max_samples))
 
     async def async_quiz(self, max_samples=1):
-        await quiz_relations(self.teacher_llm_client, self.graph_storage, self.rephrase_storage, max_samples)
+        await quiz(self.teacher_llm_client, self.graph_storage, self.rephrase_storage, max_samples)
         await self.rephrase_storage.index_done_callback()
 
     def judge(self, re_judge=False):
@@ -177,7 +177,7 @@ class GraphGen:
         loop.run_until_complete(self.async_judge(re_judge))
 
     async def async_judge(self, re_judge=False):
-        _update_relations = await judge_relations(self.student_llm_client, self.graph_storage,
+        _update_relations = await judge_statement(self.student_llm_client, self.graph_storage,
                                                   self.rephrase_storage, re_judge)
         await _update_relations.index_done_callback()
 

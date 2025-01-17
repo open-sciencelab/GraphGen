@@ -57,6 +57,10 @@ def get_loss_tercile(losses: list) -> (float, float):
 
     return losses[q1_index], losses[q2_index]
 
+def get_average_loss(batch: tuple) -> float:
+    return sum(edge[2]['loss'] for edge in batch[1]) + sum(node['loss'] for node in batch[0]) / \
+           (len(batch[0]) + len(batch[1]))
+
 async def traverse_graph_by_edge(
     llm_client: OpenAIModel,
     tokenizer: Tokenizer,
@@ -114,8 +118,6 @@ async def traverse_graph_by_edge(
         _process_batch: tuple
     ) -> dict:
         async with semaphore:
-            losses = [(edge[0], edge[1], edge[2]['loss']) for edge in _process_batch[1]]
-
             context = await _process_nodes_and_edges(
                 _process_batch[0],
                 _process_batch[1],
@@ -145,14 +147,14 @@ async def traverse_graph_by_edge(
                 compute_content_hash(context): {
                     "question": question,
                     "answer": context,
-                    "losses": losses,
+                    "loss": get_average_loss(_process_batch),
                     "difficulty": _process_batch[2],
                 }
             }
 
     results = {}
     edges = list(await graph_storage.get_all_edges())
-    nodes = await graph_storage.get_all_nodes()
+    nodes = list(await graph_storage.get_all_nodes())
 
     edges, nodes = await _pre_tokenize(graph_storage, tokenizer, edges, nodes)
 
@@ -165,18 +167,13 @@ async def traverse_graph_by_edge(
 
     losses = []
     for batch in processing_batches:
-        if len(batch[1]) == 0:
-            continue
-        loss = sum(edge[2]['loss'] for edge in batch[1]) / len(batch[1])
+        loss = get_average_loss(batch)
         losses.append(loss)
     q1, q2 = get_loss_tercile(losses)
 
     difficulty_order = traverse_strategy.difficulty_order
     for i, batch in enumerate(processing_batches):
-        if len(batch[1]) == 0:
-            processing_batches[i] = (batch[0], batch[1], difficulty_order[0])
-            continue
-        loss = sum(edge[2]['loss'] for edge in batch[1]) / len(batch[1])
+        loss = get_average_loss(batch)
         if loss < q1:
             # easy
             processing_batches[i] = (batch[0], batch[1], difficulty_order[0])

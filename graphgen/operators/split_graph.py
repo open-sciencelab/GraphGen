@@ -260,6 +260,7 @@ async def get_batches_with_strategy(
 
         processing_batches.append((_process_nodes, _process_edges))
 
+    l
     # isolate nodes
     isolated_node_strategy = traverse_strategy.isolated_node_strategy
     if isolated_node_strategy == "add":

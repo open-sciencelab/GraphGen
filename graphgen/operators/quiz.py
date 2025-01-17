@@ -7,7 +7,7 @@ from utils import logger, detect_main_language
 from templates import DESCRIPTION_REPHRASING_PROMPT
 
 
-async def quiz_relations(
+async def quiz(
         teacher_llm_client: OpenAIModel,
         graph_storage: NetworkXStorage,
         rephrase_storage: JsonKVStorage,
@@ -26,16 +26,12 @@ async def quiz_relations(
 
     semaphore = asyncio.Semaphore(max_concurrent)
 
-    async def _quiz_single_relation(
-        edge: tuple,
+    async def _process_single_quiz(
         des: str,
         prompt: str,
         gt: str
     ):
         async with semaphore:
-            source_id = edge[0]
-            target_id = edge[1]
-
             try:
                 # 如果在rephrase_storage中已经存在，直接取出
                 descriptions = await rephrase_storage.get_by_id(des)
@@ -49,11 +45,12 @@ async def quiz_relations(
                 return  {des: [(new_description, gt)]}
 
             except Exception as e: # pylint: disable=broad-except
-                logger.error("Error when quizzing edge %s -> %s: %s", source_id, target_id, e)
+                logger.error("Error when quizzing description %s: %s", des, e)
                 return None
 
 
     edges = await graph_storage.get_all_edges()
+    nodes = await graph_storage.get_all_nodes()
 
     results = defaultdict(list)
     tasks = []
@@ -68,19 +65,36 @@ async def quiz_relations(
         for i in range(max_samples):
             if i > 0:
                 tasks.append(
-                    _quiz_single_relation(edge, description,
+                    _process_single_quiz(description,
                                           DESCRIPTION_REPHRASING_PROMPT[language]['TEMPLATE'].format(
                                               input_sentence=description), 'yes')
                 )
-            tasks.append(_quiz_single_relation(edge, description,
+            tasks.append(_process_single_quiz(description,
                                               DESCRIPTION_REPHRASING_PROMPT[language]['ANTI_TEMPLATE'].format(
                                                   input_sentence=description), 'no'))
 
+    for node in nodes:
+        node_data = node[1]
+        description = node_data["description"]
+        language = "English" if detect_main_language(description) == "en" else "Chinese"
+
+        results[description] = [(description, 'yes')]
+
+        for i in range(max_samples):
+            if i > 0:
+                tasks.append(
+                    _process_single_quiz(description,
+                                          DESCRIPTION_REPHRASING_PROMPT[language]['TEMPLATE'].format(
+                                              input_sentence=description), 'yes')
+                )
+            tasks.append(_process_single_quiz(description,
+                                              DESCRIPTION_REPHRASING_PROMPT[language]['ANTI_TEMPLATE'].format(
+                                                  input_sentence=description), 'no'))
 
     for result in tqdm_async(
             asyncio.as_completed(tasks),
             total=len(tasks),
-            desc="Quizzing relations"
+            desc="Quizzing descriptions"
     ):
         new_result = await result
         if new_result:
@@ -90,5 +104,6 @@ async def quiz_relations(
     for key, value in results.items():
         results[key] = list(set(value))
         await rephrase_storage.upsert({key: results[key]})
+
 
     return rephrase_storage

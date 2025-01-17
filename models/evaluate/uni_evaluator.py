@@ -32,6 +32,7 @@ class UniEvaluator:
 
     def __post_init__(self):
         self.num_gpus = torch.cuda.device_count()
+        self.results = {}
 
     @staticmethod
     def process_chunk(rank, pairs, model_name, max_length, dimension, return_dict):
@@ -144,7 +145,7 @@ class UniEvaluator:
         for result in results:
             for key, value in result.items():
                 final_results[key] = sum(value) / len(value)
-        self.results = final_results
+                self.results[key] = value
         return final_results
 
     def get_min_max_score(self, pairs: list[TextPair]) -> dict:

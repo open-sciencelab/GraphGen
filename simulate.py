@@ -1,5 +1,3 @@
-"""Simulate text length distributions using input data distributions when rephrasing."""
-
 import copy
 import os
 import json

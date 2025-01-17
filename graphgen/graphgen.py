@@ -8,9 +8,9 @@ from dataclasses import dataclass
 from tqdm.asyncio import tqdm as tqdm_async
 
 from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch, Tokenizer, TraverseStrategy
-from utils import create_event_loop, logger, compute_content_hash
 from models.storage.base_storage import StorageNameSpace
-from .operators import *
+from utils import create_event_loop, logger, compute_content_hash
+from .operators import extract_kg, search_wikipedia, quiz_relations, judge_relations, traverse_graph_by_edge
 
 
 sys_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -145,7 +145,7 @@ class GraphGen:
 
         logger.info(f"[Wiki Search] is {'enabled' if self.if_web_search else 'disabled'}")
         if self.if_web_search:
-            logger.info(f"[Wiki Search]...")
+            logger.info("[Wiki Search]...")
             _add_wiki_data = await search_wikipedia(
                 llm_client= self.teacher_llm_client,
                 wiki_search_client=self.wiki_client,

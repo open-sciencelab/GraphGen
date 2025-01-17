@@ -1,12 +1,11 @@
 import os
 import html
-import networkx as nx
-
 from typing import Any, Union, cast, Optional
 from dataclasses import dataclass
+import networkx as nx
 
-from .base_storage import BaseGraphStorage
 from utils import logger
+from .base_storage import BaseGraphStorage
 
 @dataclass
 class NetworkXStorage(BaseGraphStorage):
@@ -119,6 +118,9 @@ class NetworkXStorage(BaseGraphStorage):
         if self._graph.has_node(source_node_id):
             return list(self._graph.edges(source_node_id, data=True))
         return None
+
+    async def get_graph(self) -> nx.Graph:
+        return self._graph
 
     async def upsert_node(self, node_id: str, node_data: dict[str, str]):
         self._graph.add_node(node_id, **node_data)

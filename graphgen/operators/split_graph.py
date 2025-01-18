@@ -72,6 +72,7 @@ def _get_level_n_edges_by_max_width(
         if len(candidate_edges) >= max_extra_edges:
             er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in candidate_edges]
             candidate_edges = _sort_edges(er_tuples, edge_sampling)[:max_extra_edges]
+
             for edge in candidate_edges:
                 level_n_edges.append(edge)
                 edge[2]["visited"] = True
@@ -145,6 +146,7 @@ def _get_level_n_edges_by_max_tokens(
 
         er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in candidate_edges]
         candidate_edges = _sort_edges(er_tuples, edge_sampling)
+
         for edge in candidate_edges:
             max_tokens -= edge[2]["length"]
             if not edge[0] in temp_nodes:
@@ -219,15 +221,15 @@ async def get_batches_with_strategy(
             node_cache[node_id] = await _get_node_info(node_id, graph_storage)
         return node_cache[node_id]
 
-    for i, (src, tgt, _) in enumerate(edges):
-        edge_adj_list[src].append(i)
-        edge_adj_list[tgt].append(i)
-
     for i, (node_name, _) in enumerate(nodes):
         node_dict[node_name] = i
 
     er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in edges]
     edges = _sort_edges(er_tuples, edge_sampling)
+
+    for i, (src, tgt, _) in enumerate(edges):
+        edge_adj_list[src].append(i)
+        edge_adj_list[tgt].append(i)
 
     for edge in tqdm_async(edges, desc="Preparing batches"):
         if "visited" in edge[2] and edge[2]["visited"]:
@@ -269,10 +271,14 @@ async def get_batches_with_strategy(
 
         processing_batches.append((_process_nodes, _process_edges))
 
+    logger.info("Processing batches: %d", len(processing_batches))
+
     # isolate nodes
     isolated_node_strategy = traverse_strategy.isolated_node_strategy
     if isolated_node_strategy == "add":
         processing_batches = await _add_isolated_nodes(nodes, processing_batches, graph_storage)
+        logger.info("Processing batches after adding isolated nodes: %d", len(processing_batches))
+
     return processing_batches
 
 async def _add_isolated_nodes(

@@ -1,9 +1,9 @@
+from typing import List, Union
+from dataclasses import dataclass
+
 import wikipedia
 from wikipedia import set_lang
-
-from typing import List, Union
-from utils import detect_main_language
-from dataclasses import dataclass
+from utils import detect_main_language, logger
 
 
 @dataclass
@@ -22,6 +22,7 @@ class WikiSearch:
         try:
             result = wikipedia.summary(query, auto_suggest=False, redirect=False)
         except wikipedia.exceptions.DisambiguationError as e:
+            logger.error("DisambiguationError: %s", e)
             result = None
         return result
 
@@ -30,5 +31,6 @@ class WikiSearch:
         try:
             result = wikipedia.page(query, auto_suggest=False, redirect=False).content
         except wikipedia.exceptions.DisambiguationError as e:
+            logger.error("DisambiguationError: %s", e)
             result = None
         return result

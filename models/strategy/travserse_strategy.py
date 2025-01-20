@@ -12,9 +12,9 @@ class TraverseStrategy(BaseStrategy):
     # 每个方向拓展的最大边数
     max_extra_edges: int = 5
     # 最长token数
-    max_tokens: int = 512
+    max_tokens: int = 256
     # 每个方向拓展的最大深度
-    max_depth: int = 5
+    max_depth: int = 2
     # 同一层中选边的策略（如果是双向拓展，同一层指的是两边连接的边的集合）
     edge_sampling: str = "max_loss" # "max_loss" or "min_loss" or "random"
     # 孤立节点的处理策略

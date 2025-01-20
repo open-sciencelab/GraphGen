@@ -79,7 +79,6 @@ class OpenAIModel(TopkTokenModel):
 
         completion = await self.client.chat.completions.create(
             model=self.model_name,
-            messages=kwargs["messages"],
             **kwargs
         )
 
@@ -98,7 +97,6 @@ class OpenAIModel(TopkTokenModel):
 
         completion = await self.client.chat.completions.create(
             model=self.model_name,
-            messages=kwargs["messages"],
             **kwargs
         )
 

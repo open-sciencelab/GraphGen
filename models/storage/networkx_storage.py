@@ -126,7 +126,7 @@ class NetworkXStorage(BaseGraphStorage):
         if self._graph.has_node(node_id):
             self._graph.nodes[node_id].update(node_data)
         else:
-            logger.warning(f"Node {node_id} not found in the graph for update.")
+            logger.warning("Node %s not found in the graph for update.", node_id)
 
     async def upsert_edge(
         self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]
@@ -147,6 +147,6 @@ class NetworkXStorage(BaseGraphStorage):
         """
         if self._graph.has_node(node_id):
             self._graph.remove_node(node_id)
-            logger.info(f"Node {node_id} deleted from the graph.")
+            logger.info("Node %s deleted from the graph.", node_id)
         else:
-            logger.warning(f"Node {node_id} not found in the graph for deletion.")
+            logger.warning("Node %s not found in the graph for deletion.", node_id)

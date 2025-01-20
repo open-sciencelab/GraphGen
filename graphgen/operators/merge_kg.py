@@ -1,11 +1,12 @@
 from collections import Counter
+import asyncio
+from tqdm.asyncio import tqdm as tqdm_async
+
 from utils.format import split_string_by_multi_markers
+from utils import logger, detect_main_language
 from models import TopkTokenModel, Tokenizer
 from models.storage.base_storage import BaseGraphStorage
 from templates import KG_SUMMARIZATION_PROMPT, KG_EXTRACTION_PROMPT
-from utils import logger, detect_main_language
-from tqdm.asyncio import tqdm as tqdm_async
-import asyncio
 
 async def _handle_kg_summary(
     entity_or_relation_name: str,
@@ -100,11 +101,11 @@ async def merge_nodes(
                 set([dp["source_id"] for dp in node_data] + source_ids)
             )
 
-            node_data = dict(
-                entity_type=entity_type,
-                description=description,
-                source_id=source_id
-            )
+            node_data = {
+                "entity_type": entity_type,
+                "description": description,
+                "source_id": source_id
+            }
             await kg_instance.upsert_node(
                 entity_name,
                 node_data=node_data
@@ -124,7 +125,7 @@ async def merge_nodes(
     ):
         try:
             entities_data.append(await result)
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             logger.error("Error occurred while inserting entities into storage: %s", e)
 
 
@@ -168,7 +169,7 @@ async def merge_edges(
             )
 
             for insert_id in [src_id, tgt_id]:
-                if not (await kg_instance.has_node(insert_id)):
+                if not await kg_instance.has_node(insert_id):
                     await kg_instance.upsert_node(
                         insert_id,
                         node_data={
@@ -185,17 +186,17 @@ async def merge_edges(
             await kg_instance.upsert_edge(
                 src_id,
                 tgt_id,
-                edge_data=dict(
-                    description=description,
-                    source_id=source_id
-                )
+                edge_data={
+                    "source_id": source_id,
+                    "description": description
+                }
             )
 
-            edge_data = dict(
-                src_id=src_id,
-                tgt_id=tgt_id,
-                description=description,
-            )
+            edge_data = {
+                "src_id": src_id,
+                "tgt_id": tgt_id,
+                "description": description
+            }
             return edge_data
 
     logger.info("Inserting relationships into storage...")
@@ -210,5 +211,5 @@ async def merge_edges(
     ):
         try:
             relationships_data.append(await result)
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             logger.error("Error occurred while inserting relationships into storage: %s", e)

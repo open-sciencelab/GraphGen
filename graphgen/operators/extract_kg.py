@@ -3,14 +3,14 @@ import asyncio
 
 from typing import List
 from collections import defaultdict
+from tqdm.asyncio import tqdm as tqdm_async
 from models import Chunk, OpenAIModel, Tokenizer
 from models.storage.base_storage import BaseGraphStorage
 from templates import KG_EXTRACTION_PROMPT
-from tqdm.asyncio import tqdm as tqdm_async
 from utils import (logger, pack_history_conversations, split_string_by_multi_markers,
                    handle_single_entity_extraction, handle_single_relationship_extraction,
                    detect_if_chinese)
-from .merge_kg import merge_nodes, merge_edges
+from graphgen.operators.merge_kg import merge_nodes, merge_edges
 
 
 async def extract_kg(
@@ -51,12 +51,18 @@ async def extract_kg(
 
             history = pack_history_conversations(hint_prompt, final_result)
             for loop_index in range(max_loop):
-                if_loop_result = await llm_client.generate_answer(text=KG_EXTRACTION_PROMPT[language]["IF_LOOP"], history=history)
+                if_loop_result = await llm_client.generate_answer(
+                    text=KG_EXTRACTION_PROMPT[language]["IF_LOOP"],
+                    history=history
+                )
                 if_loop_result = if_loop_result.strip().strip('"').strip("'").lower()
                 if if_loop_result != "yes":
                     break
 
-                glean_result = await llm_client.generate_answer(text=KG_EXTRACTION_PROMPT[language]["CONTINUE"], history=history)
+                glean_result = await llm_client.generate_answer(
+                    text=KG_EXTRACTION_PROMPT[language]["CONTINUE"],
+                    history=history
+                )
                 logger.info(f"Loop {loop_index} glean: {glean_result}")
 
                 history += pack_history_conversations(KG_EXTRACTION_PROMPT[language]["CONTINUE"], glean_result)
@@ -101,7 +107,7 @@ async def extract_kg(
     ):
         try:
             results.append(await result)
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             logger.error("Error occurred while extracting entities and relationships from chunks: %s", e)
 
     nodes = defaultdict(list)

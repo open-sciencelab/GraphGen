@@ -1,8 +1,8 @@
 import math
 from dataclasses import dataclass
 from typing import List, Dict, Optional
-from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError, ChatCompletion
-from models import TopkTokenModel, Token
+import openai
+from openai import AsyncOpenAI, RateLimitError, APIConnectionError, APITimeoutError
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -10,7 +10,10 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-def get_top_response_tokens(response: ChatCompletion) -> List[Token]:
+from models import TopkTokenModel, Token
+
+
+def get_top_response_tokens(response: openai.ChatCompletion) -> List[Token]:
     token_logprobs = response.choices[0].logprobs.content
     tokens = []
     for token_prob in token_logprobs:
@@ -76,6 +79,7 @@ class OpenAIModel(TopkTokenModel):
 
         completion = await self.client.chat.completions.create(
             model=self.model_name,
+            messages=kwargs["messages"],
             **kwargs
         )
 
@@ -94,7 +98,11 @@ class OpenAIModel(TopkTokenModel):
 
         completion = await self.client.chat.completions.create(
             model=self.model_name,
+            messages=kwargs["messages"],
             **kwargs
         )
 
         return completion.choices[0].message.content
+
+    async def generate_inputs_prob(self, text: str, history: Optional[List[str]] = None) -> List[Token]:
+        raise NotImplementedError

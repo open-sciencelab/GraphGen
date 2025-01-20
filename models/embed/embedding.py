@@ -1,7 +1,6 @@
+from dataclasses import dataclass
 import asyncio
 import numpy as np
-
-from dataclasses import dataclass
 
 class UnlimitedSemaphore:
     """A context manager that allows unlimited access."""

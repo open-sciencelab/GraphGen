@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from .base_evaluator import BaseEvaluator
+from models.evaluate.base_evaluator import BaseEvaluator
 from models.llm.tokenizer import Tokenizer
 from models.text.text_pair import TextPair
 from utils import create_event_loop
@@ -16,7 +16,7 @@ class LengthEvaluator(BaseEvaluator):
     async def evaluate_single(self, pair: TextPair) -> float:
         loop = create_event_loop()
         return await loop.run_in_executor(None, self._calculate_length, pair.answer)
-    
+
     def _calculate_length(self, text: str) -> float:
         tokens = self.tokenizer.encode_string(text)
         return len(tokens)

@@ -17,9 +17,7 @@ class NetworkXStorage(BaseGraphStorage):
 
     @staticmethod
     def write_nx_graph(graph: nx.Graph, file_name):
-        logger.info(
-            f"Writing graph with {graph.number_of_nodes()} nodes, {graph.number_of_edges()} edges"
-        )
+        logger.info("Writing graph with %d nodes, %d edges", graph.number_of_nodes(), graph.number_of_edges())
         nx.write_graphml(graph, file_name)
 
     @staticmethod
@@ -56,9 +54,7 @@ class NetworkXStorage(BaseGraphStorage):
             def _sort_source_target(edge):
                 source, target, edge_data = edge
                 if source > target:
-                    temp = source
-                    source = target
-                    target = temp
+                    source, target = target, source
                 return source, target, edge_data
 
             edges = [_sort_source_target(edge) for edge in edges]
@@ -81,7 +77,8 @@ class NetworkXStorage(BaseGraphStorage):
         preloaded_graph = NetworkXStorage.load_nx_graph(self._graphml_xml_file)
         if preloaded_graph is not None:
             logger.info(
-                f"Loaded graph from {self._graphml_xml_file} with {preloaded_graph.number_of_nodes()} nodes, {preloaded_graph.number_of_edges()} edges"
+                "Loaded graph from %s with %d nodes, %d edges", self._graphml_xml_file,
+                preloaded_graph.number_of_nodes(), preloaded_graph.number_of_edges()
             )
         self._graph = preloaded_graph or nx.Graph()
 

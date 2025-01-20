@@ -11,11 +11,10 @@ class StorageNameSpace:
 
     async def index_done_callback(self):
         """commit the storage operations after indexing"""
-        pass
 
     async def query_done_callback(self):
         """commit the storage operations after querying"""
-        pass
+
 
 @dataclass
 class BaseKVStorage(Generic[T], StorageNameSpace):

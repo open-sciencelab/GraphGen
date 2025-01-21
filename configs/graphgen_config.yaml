@@ -1,7 +1,5 @@
 data_type: raw
 input_file: resources/examples/raw_demo.jsonl
-student_model: gpt-4o-mini
-teacher_model: gpt-4o-mini
 tokenizer: cl100k_base
 quiz_samples: 2
 traverse_strategy:

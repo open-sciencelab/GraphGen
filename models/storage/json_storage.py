@@ -23,7 +23,7 @@ class JsonKVStorage(BaseKVStorage):
     async def get_by_id(self, id):
         return self._data.get(id, None)
 
-    async def get_by_ids(self, ids, fields=None):
+    async def get_by_ids(self, ids, fields=None) -> list:
         if fields is None:
             return [self._data.get(id, None) for id in ids]
         return [

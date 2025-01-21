@@ -12,7 +12,7 @@ from utils import set_logger
 sys_path = os.path.abspath(os.path.dirname(__file__))
 unique_id = int(time.time())
 set_logger(os.path.join(sys_path, "cache", "logs", f"graphgen_{unique_id}.log"), if_stream=False)
-config_path = os.path.join(sys_path, "cache", "configs", f"graphgen_{unique_id}.yaml")
+config_path = os.path.join(sys_path, "cache", "data", "graphgen", str(unique_id), f"config-{unique_id}.yaml")
 
 load_dotenv()
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     graph_gen.insert(data, config['data_type'])
 
-    graph_gen.quiz(max_samples=2)
+    graph_gen.quiz(max_samples=config['quiz_samples'])
 
     graph_gen.judge(re_judge=False)
 

@@ -36,7 +36,7 @@ class GraphGen:
         working_dir, namespace="rephrase"
     )
     qa_storage: JsonKVStorage = JsonKVStorage(
-        os.path.join(working_dir, "data", "graphgen"), namespace=f"qa-{unique_id}"
+        os.path.join(working_dir, "data", "graphgen", str(unique_id)), namespace=f"qa-{unique_id}"
     )
 
     # text chunking
@@ -44,8 +44,8 @@ class GraphGen:
     chunk_overlap_size: int = 100
 
     # llm
-    teacher_llm_client: OpenAIModel = None
-    student_llm_client: OpenAIModel = None
+    synthesizer_llm_client: OpenAIModel = None
+    training_llm_client: OpenAIModel = None
     tokenizer_instance: Tokenizer = None
 
     # web search
@@ -73,7 +73,7 @@ class GraphGen:
             if len(new_docs) == 0:
                 logger.warning("All docs are already in the storage")
                 return {}
-            logger.info(f"[New Docs] inserting {len(new_docs)} docs")
+            logger.info("[New Docs] inserting %d docs", len(new_docs))
             for doc_key, doc in tqdm_async(
                     new_docs.items(), desc="Chunking documents", unit="doc"
                 ):
@@ -127,14 +127,14 @@ class GraphGen:
 
         inserting_chunks = await self.async_split_chunks(data, data_type)
 
-        if not len(inserting_chunks):
+        if len(inserting_chunks) == 0:
             logger.warning("All chunks are already in the storage")
             return
-        logger.info(f"[New Chunks] inserting {len(inserting_chunks)} chunks")
+        logger.info("[New Chunks] inserting %d chunks", len(inserting_chunks))
 
         logger.info("[Entity and Relation Extraction]...")
         _add_entities_and_relations = await extract_kg(
-            llm_client=self.teacher_llm_client,
+            llm_client=self.synthesizer_llm_client,
             kg_instance=self.graph_storage,
             tokenizer_instance=self.tokenizer_instance,
             chunks=[Chunk(id=k, content=v['content']) for k, v in inserting_chunks.items()]
@@ -147,7 +147,7 @@ class GraphGen:
         if self.if_web_search:
             logger.info("[Wiki Search]...")
             _add_wiki_data = await search_wikipedia(
-                llm_client= self.teacher_llm_client,
+                llm_client= self.synthesizer_llm_client,
                 wiki_search_client=self.wiki_client,
                 knowledge_graph_instance=_add_entities_and_relations
             )
@@ -169,7 +169,7 @@ class GraphGen:
         loop.run_until_complete(self.async_quiz(max_samples))
 
     async def async_quiz(self, max_samples=1):
-        await quiz(self.teacher_llm_client, self.graph_storage, self.rephrase_storage, max_samples)
+        await quiz(self.synthesizer_llm_client, self.graph_storage, self.rephrase_storage, max_samples)
         await self.rephrase_storage.index_done_callback()
 
     def judge(self, re_judge=False):
@@ -177,7 +177,7 @@ class GraphGen:
         loop.run_until_complete(self.async_judge(re_judge))
 
     async def async_judge(self, re_judge=False):
-        _update_relations = await judge_statement(self.student_llm_client, self.graph_storage,
+        _update_relations = await judge_statement(self.training_llm_client, self.graph_storage,
                                                   self.rephrase_storage, re_judge)
         await _update_relations.index_done_callback()
 
@@ -186,7 +186,7 @@ class GraphGen:
         loop.run_until_complete(self.async_traverse())
 
     async def async_traverse(self):
-        results = await traverse_graph_by_edge(self.teacher_llm_client, self.tokenizer_instance,
-                                               self.graph_storage, self.traverse_strategy)
+        results = await traverse_graph_by_edge(self.synthesizer_llm_client, self.tokenizer_instance,
+                                               self.graph_storage, self.traverse_strategy, self.text_chunks_storage)
         await self.qa_storage.upsert(results)
         await self.qa_storage.index_done_callback()

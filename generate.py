@@ -12,8 +12,15 @@ from utils import set_logger
 sys_path = os.path.abspath(os.path.dirname(__file__))
 unique_id = int(time.time())
 set_logger(os.path.join(sys_path, "cache", "logs", f"graphgen_{unique_id}.log"), if_stream=False)
+config_path = os.path.join(sys_path, "cache", "configs", f"graphgen_{unique_id}.yaml")
 
 load_dotenv()
+
+def save_config(global_config):
+    if not os.path.exists(os.path.dirname(config_path)):
+        os.makedirs(os.path.dirname(config_path))
+    with open(config_path, "w", encoding='utf-8') as config_file:
+        yaml.dump(global_config, config_file, default_flow_style=False, allow_unicode=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -47,12 +54,12 @@ if __name__ == '__main__':
     else:
         raise ValueError(f"Invalid data type: {args.data_type}")
 
-    teacher_llm_client = OpenAIModel(
+    synthesizer_llm_client = OpenAIModel(
         model_name=os.getenv("TEACHER_MODEL"),
         api_key=os.getenv("TEACHER_API_KEY"),
         base_url=os.getenv("TEACHER_BASE_URL")
     )
-    student_llm_client = OpenAIModel(
+    training_llm_client = OpenAIModel(
         model_name=os.getenv("STUDENT_MODEL"),
         api_key=os.getenv("STUDENT_API_KEY"),
         base_url=os.getenv("STUDENT_BASE_URL")
@@ -62,8 +69,8 @@ if __name__ == '__main__':
 
     graph_gen = GraphGen(
         unique_id=unique_id,
-        teacher_llm_client=teacher_llm_client,
-        student_llm_client=student_llm_client,
+        teacher_llm_client=synthesizer_llm_client,
+        student_llm_client=training_llm_client,
         if_web_search=args.web_search,
         tokenizer_instance=Tokenizer(
             model_name=args.tokenizer
@@ -79,8 +86,15 @@ if __name__ == '__main__':
 
     graph_gen.traverse()
 
-    config_path = os.path.join(sys_path, "cache", "configs", f"graphgen_{unique_id}.yaml")
-    if not os.path.exists(os.path.dirname(config_path)):
-        os.makedirs(os.path.dirname(config_path))
-    with open(config_path, "w", encoding='utf-8') as f:
-        yaml.dump(traverse_strategy.to_yaml(), f)
+    config = {
+        "unique_id": unique_id,
+        "input_file": input_file,
+        "data_type": args.data_type,
+        "web_search": args.web_search,
+        "tokenizer": args.tokenizer,
+        "teacher_model": os.getenv("TEACHER_MODEL"),
+        "student_model": os.getenv("STUDENT_MODEL"),
+    }
+    traverse_strategy_yaml = traverse_strategy.to_yaml()
+    config.update(traverse_strategy_yaml)
+    save_config(config)

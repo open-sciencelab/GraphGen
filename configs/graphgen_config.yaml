@@ -1,0 +1,19 @@
+data_type: raw
+input_file: resources/examples/raw_demo.jsonl
+student_model: gpt-4o-mini
+teacher_model: gpt-4o-mini
+tokenizer: cl100k_base
+quiz_samples: 2
+traverse_strategy:
+  bidirectional: true
+  difficulty_order:
+  - medium
+  - medium
+  - medium
+  edge_sampling: max_loss
+  expand_method: max_tokens
+  isolated_node_strategy: ignore
+  max_depth: 5
+  max_extra_edges: 5
+  max_tokens: 256
+web_search: false

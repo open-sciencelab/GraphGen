@@ -43,7 +43,7 @@ async def _handle_kg_summary(
         **KG_SUMMARIZATION_PROMPT["FORMAT"]
     )
     new_description = await llm_client.generate_answer(prompt)
-    logger.info(f"Entity or relation {entity_or_relation_name} summary: {new_description}")
+    logger.info("Entity or relation %s summary: %s", entity_or_relation_name, new_description)
     return new_description
 
 

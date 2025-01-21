@@ -63,7 +63,7 @@ async def extract_kg(
                     text=KG_EXTRACTION_PROMPT[language]["CONTINUE"],
                     history=history
                 )
-                logger.info(f"Loop {loop_index} glean: {glean_result}")
+                logger.info('Loop %s glean: %s', loop_index, glean_result)
 
                 history += pack_history_conversations(KG_EXTRACTION_PROMPT[language]["CONTINUE"], glean_result)
                 final_result += glean_result

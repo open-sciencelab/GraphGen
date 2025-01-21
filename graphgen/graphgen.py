@@ -98,7 +98,7 @@ class GraphGen:
             if len(new_docs) == 0:
                 logger.warning("All docs are already in the storage")
                 return {}
-            logger.info(f"[New Docs] inserting {len(new_docs)} docs")
+            logger.info("[New Docs] inserting %d docs", len(new_docs))
             for doc in tqdm_async(data, desc="Chunking documents", unit="doc"):
                 doc_str = "".join([chunk['content'] for chunk in doc])
                 for chunk in doc:

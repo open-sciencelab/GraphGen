@@ -137,7 +137,7 @@ class NetworkXStorage(BaseGraphStorage):
         if self._graph.has_edge(source_node_id, target_node_id):
             self._graph.edges[(source_node_id, target_node_id)].update(edge_data)
         else:
-            logger.warning(f"Edge {source_node_id} -> {target_node_id} not found in the graph for update.")
+            logger.warning("Edge %s -> %s not found in the graph for update.", source_node_id, target_node_id)
 
     async def delete_node(self, node_id: str):
         """

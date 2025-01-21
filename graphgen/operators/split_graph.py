@@ -5,6 +5,8 @@ from utils import logger
 
 from models import NetworkXStorage, TraverseStrategy
 
+# TODO: move to config
+loss_strategy: str = "only_edge" # only_edge, both
 
 async def _get_node_info(
     node_id: str,
@@ -70,8 +72,13 @@ def _get_level_n_edges_by_max_width(
             break
 
         if len(candidate_edges) >= max_extra_edges:
-            er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in candidate_edges]
-            candidate_edges = _sort_edges(er_tuples, edge_sampling)[:max_extra_edges]
+            if loss_strategy == "both":
+                er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in candidate_edges]
+                candidate_edges = _sort_tuples(er_tuples, edge_sampling)[:max_extra_edges]
+            elif loss_strategy == "only_edge":
+                candidate_edges = _sort_edges(candidate_edges, edge_sampling)[:max_extra_edges]
+            else:
+                raise ValueError(f"Invalid loss strategy: {loss_strategy}")
 
             for edge in candidate_edges:
                 level_n_edges.append(edge)
@@ -144,8 +151,13 @@ def _get_level_n_edges_by_max_tokens(
         if not candidate_edges:
             break
 
-        er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in candidate_edges]
-        candidate_edges = _sort_edges(er_tuples, edge_sampling)
+        if loss_strategy == "both":
+            er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in candidate_edges]
+            candidate_edges = _sort_tuples(er_tuples, edge_sampling)
+        elif loss_strategy == "only_edge":
+            candidate_edges = _sort_edges(candidate_edges, edge_sampling)
+        else:
+            raise ValueError(f"Invalid loss strategy: {loss_strategy}")
 
         for edge in candidate_edges:
             max_tokens -= edge[2]["length"]
@@ -174,7 +186,7 @@ def _get_level_n_edges_by_max_tokens(
     return level_n_edges
 
 
-def _sort_edges(er_tuples: list, edge_sampling: str) -> list:
+def _sort_tuples(er_tuples: list, edge_sampling: str) -> list:
     """
     Sort edges with edge sampling strategy
 
@@ -194,17 +206,37 @@ def _sort_edges(er_tuples: list, edge_sampling: str) -> list:
     edges = [edge for _, edge in er_tuples]
     return edges
 
+def _sort_edges(edges: list, edge_sampling: str) -> list:
+    """
+    Sort edges with edge sampling strategy
+
+    :param edges: total edges
+    :param edge_sampling: edge sampling strategy (random, min_loss, max_loss)
+    :return: sorted edges
+    """
+    if edge_sampling == "random":
+        random.shuffle(edges)
+    elif edge_sampling == "min_loss":
+        edges = sorted(edges, key=lambda x: x[2]["loss"])
+    elif edge_sampling == "max_loss":
+        edges = sorted(edges, key=lambda x: x[2]["loss"], reverse=True)
+    else:
+        raise ValueError(f"Invalid edge sampling: {edge_sampling}")
+    return edges
+
 async def get_batches_with_strategy(
     nodes: list,
     edges: list,
     graph_storage: NetworkXStorage,
-    traverse_strategy: TraverseStrategy,
+    traverse_strategy: TraverseStrategy
 ):
     expand_method = traverse_strategy.expand_method
     if expand_method == "max_width":
         logger.info("Using max width strategy")
-    else:
+    elif expand_method == "max_tokens":
         logger.info("Using max tokens strategy")
+    else:
+        raise ValueError(f"Invalid expand method: {expand_method}")
 
     max_depth = traverse_strategy.max_depth
     edge_sampling = traverse_strategy.edge_sampling
@@ -224,8 +256,13 @@ async def get_batches_with_strategy(
     for i, (node_name, _) in enumerate(nodes):
         node_dict[node_name] = i
 
-    er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in edges]
-    edges = _sort_edges(er_tuples, edge_sampling)
+    if loss_strategy == "both":
+        er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in edges]
+        edges = _sort_tuples(er_tuples, edge_sampling)
+    elif loss_strategy == "only_edge":
+        edges = _sort_edges(edges, edge_sampling)
+    else:
+        raise ValueError(f"Invalid loss strategy: {loss_strategy}")
 
     for i, (src, tgt, _) in enumerate(edges):
         edge_adj_list[src].append(i)

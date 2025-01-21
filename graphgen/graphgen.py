@@ -143,7 +143,7 @@ class GraphGen:
             logger.warning("No entities or relations extracted")
             return
 
-        logger.info(f"[Wiki Search] is {'enabled' if self.if_web_search else 'disabled'}")
+        logger.info("[Wiki Search] is %s", 'enabled' if self.if_web_search else 'disabled')
         if self.if_web_search:
             logger.info("[Wiki Search]...")
             _add_wiki_data = await search_wikipedia(

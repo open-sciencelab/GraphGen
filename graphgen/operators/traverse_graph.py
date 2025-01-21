@@ -6,6 +6,9 @@ from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
 from utils import detect_main_language, compute_content_hash, logger
 from graphgen.operators.split_graph import get_batches_with_strategy
 
+# TODO: move to config
+# TODO: if add isolated nodes, the loss strategy should be changed to "both"
+loss_strategy: str = "only_edge" # only_edge, both
 
 async def _pre_tokenize(graph_storage: NetworkXStorage,
                         tokenizer: Tokenizer,
@@ -98,8 +101,13 @@ def get_loss_tercile(losses: list) -> (float, float):
     return losses[q1_index], losses[q2_index]
 
 def get_average_loss(batch: tuple) -> float:
-    return sum(edge[2]['loss'] for edge in batch[1]) + sum(node['loss'] for node in batch[0]) / \
-           (len(batch[0]) + len(batch[1]))
+    if loss_strategy == "only_edge":
+        return sum(edge[2]['loss'] for edge in batch[1]) / len(batch[1])
+    elif loss_strategy == "both":
+        return sum(edge[2]['loss'] for edge in batch[1]) + sum(node['loss'] for node in batch[0]) / \
+               (len(batch[0]) + len(batch[1]))
+    else:
+        raise ValueError("Invalid loss strategy")
 
 def _post_process_synthetic_data(data):
     block = data.split("\n\n")

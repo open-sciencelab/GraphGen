@@ -24,35 +24,24 @@ def save_config(global_config):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--input_file',
-                        help='Raw context jsonl path.',
-                        default='resources/examples/chunked_demo.json',
+    parser.add_argument('--config_file',
+                        help='Config parameters for GraphGen.',
+                        default='graphgen_config.yaml',
                         type=str)
-    parser.add_argument('--data_type',
-                        help='Data type of input file. (Raw context or chunked context)',
-                        choices=['raw', 'chunked'],
-                        default='raw',
-                        type=str)
-    parser.add_argument('--web_search',
-                        help='Search node info from wiki.',
-                        action='store_true',
-                        default=False)
-    parser.add_argument('--tokenizer',
-                        help='Tokenizer name.',
-                        default='cl100k_base',
-                        type=str)
-
     args = parser.parse_args()
-    input_file = args.input_file
+    with open(args.config_file, "r", encoding='utf-8') as f:
+        config = yaml.load(f, Loader=yaml.FullLoader)
 
-    if args.data_type == 'raw':
+    input_file = config['input_file']
+
+    if config['data_type'] == 'raw':
         with open(input_file, "r", encoding='utf-8') as f:
             data = [json.loads(line) for line in f]
-    elif args.data_type == 'chunked':
+    elif config['data_type'] == 'chunked':
         with open(input_file, "r", encoding='utf-8') as f:
             data = json.load(f)
     else:
-        raise ValueError(f"Invalid data type: {args.data_type}")
+        raise ValueError(f"Invalid data type: {config['data_type']}")
 
     synthesizer_llm_client = OpenAIModel(
         model_name=os.getenv("TEACHER_MODEL"),
@@ -65,20 +54,22 @@ if __name__ == '__main__':
         base_url=os.getenv("STUDENT_BASE_URL")
     )
 
-    traverse_strategy = TraverseStrategy()
+    traverse_strategy = TraverseStrategy(
+        **config['traverse_strategy']
+    )
 
     graph_gen = GraphGen(
         unique_id=unique_id,
-        teacher_llm_client=synthesizer_llm_client,
-        student_llm_client=training_llm_client,
-        if_web_search=args.web_search,
+        synthesizer_llm_client=synthesizer_llm_client,
+        training_llm_client=training_llm_client,
+        if_web_search=config['web_search'],
         tokenizer_instance=Tokenizer(
-            model_name=args.tokenizer
+            model_name=config['tokenizer']
         ),
         traverse_strategy=traverse_strategy
     )
 
-    graph_gen.insert(data, args.data_type)
+    graph_gen.insert(data, config['data_type'])
 
     graph_gen.quiz(max_samples=2)
 
@@ -86,15 +77,4 @@ if __name__ == '__main__':
 
     graph_gen.traverse()
 
-    config = {
-        "unique_id": unique_id,
-        "input_file": input_file,
-        "data_type": args.data_type,
-        "web_search": args.web_search,
-        "tokenizer": args.tokenizer,
-        "teacher_model": os.getenv("TEACHER_MODEL"),
-        "student_model": os.getenv("STUDENT_MODEL"),
-    }
-    traverse_strategy_yaml = traverse_strategy.to_yaml()
-    config.update(traverse_strategy_yaml)
     save_config(config)

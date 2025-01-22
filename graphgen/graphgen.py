@@ -20,24 +20,6 @@ sys_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 class GraphGen:
     unique_id: int = int(time.time())
     working_dir: str = os.path.join(sys_path, "cache")
-    full_docs_storage: JsonKVStorage = JsonKVStorage(
-        working_dir, namespace="full_docs"
-    )
-    text_chunks_storage: JsonKVStorage = JsonKVStorage(
-        working_dir, namespace="text_chunks"
-    )
-    wiki_storage: JsonKVStorage = JsonKVStorage(
-        working_dir, namespace="wiki"
-    )
-    graph_storage: NetworkXStorage = NetworkXStorage(
-        working_dir, namespace="graph"
-    )
-    rephrase_storage: JsonKVStorage = JsonKVStorage(
-        working_dir, namespace="rephrase"
-    )
-    qa_storage: JsonKVStorage = JsonKVStorage(
-        os.path.join(working_dir, "data", "graphgen", str(unique_id)), namespace=f"qa-{unique_id}"
-    )
 
     # text chunking
     chunk_size: int = 1024
@@ -54,6 +36,26 @@ class GraphGen:
 
     # traverse strategy
     traverse_strategy: TraverseStrategy = TraverseStrategy()
+
+    def __post_init__(self):
+        self.full_docs_storage: JsonKVStorage = JsonKVStorage(
+            self.working_dir, namespace="full_docs"
+        )
+        self.text_chunks_storage: JsonKVStorage = JsonKVStorage(
+            self.working_dir, namespace="text_chunks"
+        )
+        self.wiki_storage: JsonKVStorage = JsonKVStorage(
+            self.working_dir, namespace="wiki"
+        )
+        self.graph_storage: NetworkXStorage = NetworkXStorage(
+            self.working_dir, namespace="graph"
+        )
+        self.rephrase_storage: JsonKVStorage = JsonKVStorage(
+            self.working_dir, namespace="rephrase"
+        )
+        self.qa_storage: JsonKVStorage = JsonKVStorage(
+            os.path.join(self.working_dir, "data", "graphgen", str(self.unique_id)), namespace=f"qa-{self.unique_id}"
+        )
 
     async def async_split_chunks(self, data: Union[List[list], List[dict]], data_type: str) -> dict:
         # TODO： 是否进行指代消解

@@ -208,6 +208,9 @@ async def traverse_graph_by_edge(
                 elif question.startswith("问题："):
                     question = question[len("问题："):].strip()
 
+                logger.info("Question: %s", question)
+                logger.info("Answer: %s", context)
+
                 return {
                     compute_content_hash(context): {
                         "question": question,

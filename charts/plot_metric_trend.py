@@ -4,8 +4,10 @@ import numpy as np
 from scipy.interpolate import make_interp_spline
 
 def plot_metric_trend(df, x, y):
-
-    fig = px.line(df, x=x, y=y, color='max length', markers=True, color_discrete_sequence=['#925EB0', '#7E99F4', '#CC7C71', '#7AB656']) # A5AEB7
+    fig = px.line(df, x=x, y=y,
+                  color='max length',
+                  markers=True,
+                  color_discrete_sequence=['#925EB0', '#7E99F4', '#CC7C71', '#7AB656']) # A5AEB7
 
     fig.update_xaxes(tickvals=df[x], ticktext=[f'{int(val * 100)}%' for val in df[x].unique()])
 
@@ -76,4 +78,3 @@ if __name__ == "__main__":
     df = pd.concat(df_list, ignore_index=True)
 
     plot_metric_trend(df, 'percentage', 'agr average')
-

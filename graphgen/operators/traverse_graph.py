@@ -103,11 +103,10 @@ def get_loss_tercile(losses: list) -> (float, float):
 def get_average_loss(batch: tuple) -> float:
     if loss_strategy == "only_edge":
         return sum(edge[2]['loss'] for edge in batch[1]) / len(batch[1])
-    elif loss_strategy == "both":
+    if loss_strategy == "both":
         return sum(edge[2]['loss'] for edge in batch[1]) + sum(node['loss'] for node in batch[0]) / \
                (len(batch[0]) + len(batch[1]))
-    else:
-        raise ValueError("Invalid loss strategy")
+    raise ValueError("Invalid loss strategy")
 
 def _post_process_synthetic_data(data):
     block = data.split("\n\n")

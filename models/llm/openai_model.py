@@ -77,7 +77,7 @@ class OpenAIModel(TopkTokenModel):
         # Limit max_tokens to 1 to avoid long completions
         kwargs["max_tokens"] = 1
 
-        completion = await self.client.chat.completions.create(
+        completion = await self.client.chat.completions.create( # pylint: disable=E1125
             model=self.model_name,
             **kwargs
         )
@@ -95,7 +95,7 @@ class OpenAIModel(TopkTokenModel):
         kwargs = self._pre_generate(text, history)
         kwargs["temperature"] = temperature
 
-        completion = await self.client.chat.completions.create(
+        completion = await self.client.chat.completions.create( # pylint: disable=E1125
             model=self.model_name,
             **kwargs
         )

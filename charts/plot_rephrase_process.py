@@ -17,7 +17,7 @@ def analyse_log(log_info: dict) -> list:
     :return
     """
     logs = []
-    current_message = None
+    current_message = {}
 
     for line in log_info:
         match = re.search(r'(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - (\w+) - (\w+) - (.+)', line)
@@ -40,8 +40,8 @@ def analyse_log(log_info: dict) -> list:
 
     logs = [log_item for log_item in logs if log_item['log_level'] == 'INFO']
 
-    for i in range(len(logs)):
-        match = re.search(r'(\d+) nodes and (\d+) edges processed', logs[i]['message'])
+    for i, log_item in enumerate(logs):
+        match = re.search(r'(\d+) nodes and (\d+) edges processed', log_item['message'])
         if match:
             break
 

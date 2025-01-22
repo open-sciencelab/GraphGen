@@ -70,7 +70,7 @@ async def plot_network(kg_instance: NetworkXStorage):
 
 if __name__ == "__main__":
     networkx_storage = NetworkXStorage(
-        '/home/PJLAB/chenzihong/Project/graphgen/cache', namespace="graph"
+        '/cache', namespace="graph"
     )
 
     import asyncio

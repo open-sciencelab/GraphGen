@@ -11,7 +11,7 @@ from utils import create_event_loop
 
 if __name__ == "__main__":
     networkx_storage = NetworkXStorage(
-        '/home/PJLAB/chenzihong/Project/graphgen/cache', namespace="graph"
+        '/cache', namespace="graph"
     )
 
     async def get_batches(traverse_strategy: TraverseStrategy):
@@ -125,7 +125,7 @@ if __name__ == "__main__":
         with gr.Tab("After Synthesis"):
             with gr.Row():
                 with gr.Column():
-                    file_list = os.listdir("cache/data/graphgen")
+                    file_list = os.listdir("../cache/data/graphgen")
                     input_file = gr.Dropdown(choices=file_list, label="Input File")
                     file_button = gr.Button("Submit File")
 
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         with gr.Tab("After Judgement"):
             with gr.Row():
                 with gr.Column():
-                    file_list = os.listdir("cache/data/graphgen")
+                    file_list = os.listdir("../cache/data/graphgen")
                     input_file = gr.Dropdown(choices=file_list, label="Input File")
                     file_button = gr.Button("Submit File")
 

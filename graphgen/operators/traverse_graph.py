@@ -194,9 +194,6 @@ async def traverse_graph_by_edge(
             pre_length = sum(node['length'] for node in _process_batch[0]) \
                          + sum(edge[2]['length'] for edge in _process_batch[1])
 
-            logger.info("%d nodes and %d edges processed", len(_process_batch[0]), len(_process_batch[1]))
-            logger.info("Pre-length: %s", pre_length)
-
             if question_type == "single":
                 question = await llm_client.generate_answer(
                     QUESTION_GENERATION_PROMPT[language]['SINGLE_TEMPLATE'].format(
@@ -208,6 +205,8 @@ async def traverse_graph_by_edge(
                 elif question.startswith("问题："):
                     question = question[len("问题："):].strip()
 
+                logger.info("%d nodes and %d edges processed", len(_process_batch[0]), len(_process_batch[1]))
+                logger.info("Pre-length: %s", pre_length)
                 logger.info("Question: %s", question)
                 logger.info("Answer: %s", context)
 
@@ -233,6 +232,8 @@ async def traverse_graph_by_edge(
                 return {}
 
             final_results = {}
+            logger.info("%d nodes and %d edges processed", len(_process_batch[0]), len(_process_batch[1]))
+            logger.info("Pre-length: %s", pre_length)
             for qa in qas:
                 logger.info("Question: %s", qa['question'])
                 logger.info("Answer: %s", qa['answer'])

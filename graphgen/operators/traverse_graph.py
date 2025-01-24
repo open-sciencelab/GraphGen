@@ -100,6 +100,33 @@ def get_loss_tercile(losses: list) -> (float, float):
 
     return losses[q1_index], losses[q2_index]
 
+def assign_difficulty(subgraphs: list, difficulty_order: list) -> list:
+    """
+    Assign difficulty to subgraphs based on the loss
+
+    :param subgraphs
+    :param difficulty_order
+    :return
+    """
+    losses = []
+    for subgraph in subgraphs:
+        loss = get_average_loss(subgraph)
+        losses.append(loss)
+    q1, q2 = get_loss_tercile(losses)
+
+    for i, subgraph in enumerate(subgraphs):
+        loss = get_average_loss(subgraph)
+        if loss < q1:
+            # easy
+            subgraphs[i] = (subgraph[0], subgraph[1], difficulty_order[0])
+        elif loss < q2:
+            # medium
+            subgraphs[i] = (subgraph[0], subgraph[1], difficulty_order[1])
+        else:
+            # hard
+            subgraphs[i] = (subgraph[0], subgraph[1], difficulty_order[2])
+    return subgraphs
+
 def get_average_loss(batch: tuple) -> float:
     if loss_strategy == "only_edge":
         return sum(edge[2]['loss'] for edge in batch[1]) / len(batch[1])
@@ -258,24 +285,7 @@ async def traverse_graph_by_edge(
         traverse_strategy
     )
 
-    losses = []
-    for batch in processing_batches:
-        loss = get_average_loss(batch)
-        losses.append(loss)
-    q1, q2 = get_loss_tercile(losses)
-
-    difficulty_order = traverse_strategy.difficulty_order
-    for i, batch in enumerate(processing_batches):
-        loss = get_average_loss(batch)
-        if loss < q1:
-            # easy
-            processing_batches[i] = (batch[0], batch[1], difficulty_order[0])
-        elif loss < q2:
-            # medium
-            processing_batches[i] = (batch[0], batch[1], difficulty_order[1])
-        else:
-            # hard
-            processing_batches[i] = (batch[0], batch[1], difficulty_order[2])
+    processing_batches = assign_difficulty(processing_batches, traverse_strategy.difficulty_order)
 
     for result in tqdm_async(asyncio.as_completed(
         [_process_single_batch(batch) for batch in processing_batches]

@@ -4,7 +4,7 @@ import json
 import gradio as gr
 
 from models import TraverseStrategy, NetworkXStorage, Tokenizer
-from charts import plot_pre_length_distribution, plot_post_synth_length_distribution, plot_loss_distribution
+from webui.charts import plot_pre_length_distribution, plot_post_synth_length_distribution, plot_loss_distribution
 from graphgen.operators.split_graph import get_batches_with_strategy
 from utils import create_event_loop
 

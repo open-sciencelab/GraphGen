@@ -4,7 +4,7 @@ import asyncio
 from dotenv import load_dotenv
 
 from models import NetworkXStorage, JsonKVStorage, OpenAIModel
-from graphgen.operators import judge_relations
+from graphgen.operators import judge_statement
 
 sys_path = os.path.abspath(os.path.dirname(__file__))
 
@@ -33,7 +33,7 @@ if __name__ == '__main__':
         namespace="rephrase"
     )
 
-    new_graph = asyncio.run(judge_relations(llm_client, graph_storage, rephrase_storage, re_judge=True))
+    new_graph = asyncio.run(judge_statement(llm_client, graph_storage, rephrase_storage, re_judge=True))
 
     graph_file = asyncio.run(graph_storage.get_graph())
 

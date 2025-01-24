@@ -3,15 +3,15 @@ import plotly.express as px
 import numpy as np
 from scipy.interpolate import make_interp_spline
 
-def plot_metric_trend(df, x, y):
-    fig = px.line(df, x=x, y=y,
+def plot_metric_trend(dataframe, x, y):
+    fig = px.line(dataframe, x=x, y=y,
                   color='max length',
                   markers=True,
                   color_discrete_sequence=['#925EB0', '#7E99F4', '#CC7C71', '#7AB656']) # A5AEB7
 
-    fig.update_xaxes(tickvals=df[x], ticktext=[f'{int(val * 100)}%' for val in df[x].unique()])
+    fig.update_xaxes(tickvals=dataframe[x], ticktext=[f'{int(val * 100)}%' for val in dataframe[x].unique()])
 
-    avg = df.groupby(x)[y].mean().reset_index()
+    avg = dataframe.groupby(x)[y].mean().reset_index()
     avg['max length'] = 'Average'
 
     x_smooth = np.linspace(avg[x].min(), avg[x].max(), 500)

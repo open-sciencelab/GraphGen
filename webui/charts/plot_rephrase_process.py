@@ -40,12 +40,14 @@ def analyse_log(log_info: dict) -> list:
 
     logs = [log_item for log_item in logs if log_item['log_level'] == 'INFO']
 
+    break_index = 0
     for i, log_item in enumerate(logs):
         match = re.search(r'(\d+) nodes and (\d+) edges processed', log_item['message'])
         if match:
+            break_index = i
             break
 
-    logs = logs[i:]
+    logs = logs[break_index:]
     assert len(logs) % 3 == 0
 
     # 每三个为一组
@@ -93,8 +95,8 @@ def plot_pre_length_distribution(stats: list[dict]):
     length_distribution = defaultdict(int)
 
     # 一次遍历完成所有统计
-    for item in stats:
-        bin_start = (item['pre_length'] // bin_size) * bin_size
+    for stat in stats:
+        bin_start = (stat['pre_length'] // bin_size) * bin_size
         bin_key = f"{bin_start}-{bin_start + bin_size}"
         length_distribution[bin_key] += 1
 
@@ -145,7 +147,7 @@ def plot_post_synth_length_distribution(stats: list[dict]):
         return go.Figure()
 
     # 计算最大长度并确定区间
-    max_length = max(item['post_length'] for item in stats)
+    max_length = max(stat['post_length'] for stat in stats)
     bin_size = 50
     max_length = ((max_length // bin_size) + 1) * bin_size
 
@@ -153,8 +155,8 @@ def plot_post_synth_length_distribution(stats: list[dict]):
     length_distribution = defaultdict(int)
 
     # 一次遍历完成所有统计
-    for item in stats:
-        bin_start = (item['post_length'] // bin_size) * bin_size
+    for stat in stats:
+        bin_start = (stat['post_length'] // bin_size) * bin_size
         bin_key = f"{bin_start}-{bin_start + bin_size}"
         length_distribution[bin_key] += 1
 

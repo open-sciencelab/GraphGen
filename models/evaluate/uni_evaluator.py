@@ -7,7 +7,7 @@ from torch import nn
 import torch.multiprocessing as mp
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from models import TextPair
+from models.text.text_pair import TextPair
 
 
 def _add_questions(dimension: str, question: str, answer: str):

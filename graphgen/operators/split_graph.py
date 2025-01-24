@@ -224,7 +224,7 @@ def _sort_edges(edges: list, edge_sampling: str) -> list:
         raise ValueError(f"Invalid edge sampling: {edge_sampling}")
     return edges
 
-async def get_batches_with_strategy( # pylint: disable=too-many-arguments
+async def get_batches_with_strategy( # pylint: disable=too-many-branches
     nodes: list,
     edges: list,
     graph_storage: NetworkXStorage,

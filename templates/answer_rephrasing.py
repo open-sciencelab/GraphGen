@@ -199,7 +199,7 @@ EASY_REQUIREMENT_EN = """
 - Does not need excessive details or examples; just the basic concepts and relationships.
 
 ################
-Please directly output the rephrased text below, without any additional content.
+Please directly output the coherent rephrased text below, without any additional content.
 
 Rephrased Text:
 """
@@ -211,21 +211,21 @@ EASY_REQUIREMENT_ZH = """
 - 不需要过多的细节或示例，只需基本概念和关系。
 
 ################
-请在下方直接输出重述文本，不要输出任何额外的内容。
+请在下方直接输出连贯的重述文本，不要输出任何额外的内容。
 
 重述文本:
 """
 
 MEDIUM_REQUIREMENT_ZH = """
 ################
-请在下方直接输出重述文本，不要输出任何额外的内容。
+请在下方直接输出连贯的重述文本，不要输出任何额外的内容。
 
 重述文本:
 """
 
 MEDIUM_REQUIREMENT_EN = """
 ################
-Please directly output the rephrased text below, without any additional content.
+Please directly output the coherent rephrased text below, without any additional content.
 
 Rephrased Text:
 """
@@ -236,7 +236,7 @@ HARD_REQUIREMENT_EN = """
 - Includes detailed background information, emphasizing logical consistency and complexity.
 
 ################
-Please directly output the rephrased text below, without any additional content.
+Please directly output the coherent rephrased text below, without any additional content.
 
 Rephrased Text:
 """
@@ -247,7 +247,7 @@ HARD_REQUIREMENT_ZH = """
 - 包括详细的背景信息，强调逻辑一致性和复杂性。
 
 ################
-请在下方直接输出重述文本，不要输出任何额外的内容。
+请在下方直接输出连贯的重述文本，不要输出任何额外的内容。
 
 重述文本:
 """

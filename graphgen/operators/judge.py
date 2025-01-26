@@ -7,7 +7,7 @@ from templates import STATEMENT_JUDGEMENT_PROMPT
 
 
 async def judge_statement( # pylint: disable=too-many-statements
-        student_llm_client: OpenAIModel,
+        training_llm_client: OpenAIModel,
         graph_storage: NetworkXStorage,
         rephrase_storage: JsonKVStorage,
         re_judge: bool = False,
@@ -15,7 +15,7 @@ async def judge_statement( # pylint: disable=too-many-statements
     """
     Get all edges and nodes and judge them
 
-    :param student_llm_client: judge the statements to get comprehension loss
+    :param training_llm_client: judge the statements to get comprehension loss
     :param graph_storage: graph storage instance
     :param rephrase_storage: rephrase storage instance
     :param re_judge: re-judge the relations
@@ -46,7 +46,7 @@ async def judge_statement( # pylint: disable=too-many-statements
                 judgements = []
                 gts = [gt for _, gt in descriptions]
                 for description, gt in descriptions:
-                    judgement = await student_llm_client.generate_topk_per_token(
+                    judgement = await training_llm_client.generate_topk_per_token(
                         STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=description)
                     )
                     judgements.append(judgement[0].top_candidates)
@@ -94,7 +94,7 @@ async def judge_statement( # pylint: disable=too-many-statements
                 judgements = []
                 gts = [gt for _, gt in descriptions]
                 for description, gt in descriptions:
-                    judgement = await student_llm_client.generate_topk_per_token(
+                    judgement = await training_llm_client.generate_topk_per_token(
                         STATEMENT_JUDGEMENT_PROMPT['TEMPLATE'].format(statement=description)
                     )
                     judgements.append(judgement[0].top_candidates)

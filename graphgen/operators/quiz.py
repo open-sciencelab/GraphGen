@@ -8,7 +8,7 @@ from templates import DESCRIPTION_REPHRASING_PROMPT
 
 
 async def quiz(
-        teacher_llm_client: OpenAIModel,
+        synth_llm_client: OpenAIModel,
         graph_storage: NetworkXStorage,
         rephrase_storage: JsonKVStorage,
         max_samples: int = 1,
@@ -16,7 +16,7 @@ async def quiz(
     """
     Get all edges and quiz them
 
-    :param teacher_llm_client: generate statements
+    :param synth_llm_client: generate statements
     :param graph_storage: graph storage instance
     :param rephrase_storage: rephrase storage instance
     :param max_samples: max samples for each edge
@@ -38,7 +38,7 @@ async def quiz(
                 if descriptions:
                     return None
 
-                new_description = await teacher_llm_client.generate_answer(
+                new_description = await synth_llm_client.generate_answer(
                     prompt,
                     temperature=1
                 )

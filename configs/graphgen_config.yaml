@@ -1,3 +1,4 @@
+qa_form: atomic
 data_type: raw
 input_file: resources/examples/raw_demo.jsonl
 tokenizer: cl100k_base

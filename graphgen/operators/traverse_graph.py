@@ -1,4 +1,6 @@
 import asyncio
+
+from numba.scripts.generate_lower_listing import description
 from tqdm.asyncio import tqdm as tqdm_async
 
 from models import OpenAIModel, NetworkXStorage, TraverseStrategy, Tokenizer, JsonKVStorage
@@ -295,4 +297,104 @@ async def traverse_graph_by_edge(
         except Exception as e: # pylint: disable=broad-except
             logger.error("Error occurred while processing batches: %s", e)
 
+    return results
+
+
+async def traverse_graph_atomically(
+    llm_client: OpenAIModel,
+    tokenizer: Tokenizer,
+    graph_storage: NetworkXStorage,
+    traverse_strategy: TraverseStrategy,
+    text_chunks_storage: JsonKVStorage,
+    max_concurrent: int = 1000
+) -> dict:
+    """
+    Traverse the graph atomicly
+
+    :param llm_client
+    :param tokenizer
+    :param graph_storage
+    :param traverse_strategy
+    :param text_chunks_storage
+    :param max_concurrent
+    :return: question and answer
+    """
+
+    assert traverse_strategy.qa_form == "atomic"
+
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    async def _generate_question(
+        node_or_edge: tuple
+    ):
+        if len(node_or_edge) == 2:
+            des = node_or_edge[0] + ": " + node_or_edge[1]['description']
+            answer = node_or_edge[1]['description']
+        else:
+            des = node_or_edge[2]['description']
+            answer = node_or_edge[2]['description']
+
+        async with semaphore:
+            try:
+                language = "Chinese" if detect_main_language(des) == "zh" else "English"
+                question = await llm_client.generate_answer(
+                    QUESTION_GENERATION_PROMPT[language]['SINGLE_TEMPLATE'].format(
+                        answer=des
+                    )
+                )
+                if question.startswith("Question:"):
+                    question = question[len("Question:"):].strip()
+                elif question.startswith("问题："):
+                    question = question[len("问题："):].strip()
+
+                question = question.strip("\"")
+                answer = answer.strip("\"")
+
+                logger.info("Question: %s", question)
+                logger.info("Answer: %s", answer)
+                return {
+                    compute_content_hash(question): {
+                        "question": question,
+                        "answer": answer,
+                        "loss": -1,
+                        "difficulty": "medium"
+                    }
+                }
+            except Exception as e: # pylint: disable=broad-except
+                logger.error("Error occurred while generating question: %s", e)
+                return {}
+
+    results = {}
+    edges = list(await graph_storage.get_all_edges())
+    nodes = list(await graph_storage.get_all_nodes())
+
+    edges, nodes = await _pre_tokenize(graph_storage, tokenizer, edges, nodes)
+
+    # TODO: 需要把node的name也加进去，或者只用edge，两种都试一下
+    tasks = []
+    # des中可能会有SEP分割符
+    for node in nodes:
+        if "<SEP>" in node[1]['description']:
+            description_list = node[1]['description'].split("<SEP>")
+            for item in description_list:
+                tasks.append((node[0], {"description": item}))
+        else:
+            tasks.append((node[0], node[1]))
+    for edge in edges:
+        if "<SEP>" in edge[2]['description']:
+            description_list = edge[2]['description'].split("<SEP>")
+            for item in description_list:
+                tasks.append((edge[0], edge[1], {"description": item}))
+        else:
+            tasks.append((edge[0], edge[1], edge[2]))
+
+    for result in tqdm_async(
+        asyncio.as_completed([_generate_question(task) for task in tasks]),
+        total=len(tasks),
+        desc="Generating questions"
+    ):
+        try:
+            results.update(await result)
+        except Exception as e: # pylint: disable=broad-except
+            logger.error("Error occurred while generating questions: %s", e)
     return results

@@ -5,6 +5,8 @@ from models.strategy.base_strategy import BaseStrategy
 
 @dataclass
 class TraverseStrategy(BaseStrategy):
+    # 生成的QA形式：原子、多跳、开放性
+    qa_form: str = "atomic"
     # 最大边数和最大token数方法中选择一个生效
     expand_method: str = "max_tokens" # "max_width" or "max_tokens"
     # 单向拓展还是双向拓展

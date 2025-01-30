@@ -319,20 +319,20 @@ async def traverse_graph_atomically(
     :param max_concurrent
     :return: question and answer
     """
-
     assert traverse_strategy.qa_form == "atomic"
 
     semaphore = asyncio.Semaphore(max_concurrent)
-
     async def _generate_question(
         node_or_edge: tuple
     ):
         if len(node_or_edge) == 2:
             des = node_or_edge[0] + ": " + node_or_edge[1]['description']
             answer = node_or_edge[1]['description']
+            loss = node_or_edge[1]['loss']
         else:
             des = node_or_edge[2]['description']
             answer = node_or_edge[2]['description']
+            loss = node_or_edge[2]['loss']
 
         async with semaphore:
             try:
@@ -356,7 +356,7 @@ async def traverse_graph_atomically(
                     compute_content_hash(question): {
                         "question": question,
                         "answer": answer,
-                        "loss": -1,
+                        "loss": loss,
                         "difficulty": "medium"
                     }
                 }
@@ -377,14 +377,14 @@ async def traverse_graph_atomically(
         if "<SEP>" in node[1]['description']:
             description_list = node[1]['description'].split("<SEP>")
             for item in description_list:
-                tasks.append((node[0], {"description": item}))
+                tasks.append((node[0], {"description": item, 'loss': node[1]['loss']}))
         else:
             tasks.append((node[0], node[1]))
     for edge in edges:
         if "<SEP>" in edge[2]['description']:
             description_list = edge[2]['description'].split("<SEP>")
             for item in description_list:
-                tasks.append((edge[0], edge[1], {"description": item}))
+                tasks.append((edge[0], edge[1], {"description": item, 'loss': edge[2]['loss']}))
         else:
             tasks.append((edge[0], edge[1], edge[2]))
 

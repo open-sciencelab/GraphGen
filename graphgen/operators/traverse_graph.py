@@ -327,25 +327,29 @@ async def traverse_graph_atomically(
     ):
         if len(node_or_edge) == 2:
             des = node_or_edge[0] + ": " + node_or_edge[1]['description']
-            answer = node_or_edge[1]['description']
             loss = node_or_edge[1]['loss']
         else:
             des = node_or_edge[2]['description']
-            answer = node_or_edge[2]['description']
             loss = node_or_edge[2]['loss']
 
         async with semaphore:
             try:
                 language = "Chinese" if detect_main_language(des) == "zh" else "English"
-                question = await llm_client.generate_answer(
-                    QUESTION_GENERATION_PROMPT[language]['SINGLE_TEMPLATE'].format(
-                        answer=des
+
+                qa = await llm_client.generate_answer(
+                    QUESTION_GENERATION_PROMPT[language]['SINGLE_QA_TEMPLATE'].format(
+                        doc=des
                     )
                 )
-                if question.startswith("Question:"):
-                    question = question[len("Question:"):].strip()
-                elif question.startswith("问题："):
-                    question = question[len("问题："):].strip()
+
+                if "Question:" in qa and "Answer:" in qa:
+                    question = qa.split("Question:")[1].split("Answer:")[0].strip()
+                    answer = qa.split("Answer:")[1].strip()
+                elif "问题：" in qa and "答案：" in qa:
+                    question = qa.split("问题：")[1].split("答案：")[0].strip()
+                    answer = qa.split("答案：")[1].strip()
+                else:
+                    return {}
 
                 question = question.strip("\"")
                 answer = answer.strip("\"")
@@ -370,9 +374,7 @@ async def traverse_graph_atomically(
 
     edges, nodes = await _pre_tokenize(graph_storage, tokenizer, edges, nodes)
 
-    # TODO: 需要把node的name也加进去，或者只用edge，两种都试一下
     tasks = []
-    # des中可能会有SEP分割符
     for node in nodes:
         if "<SEP>" in node[1]['description']:
             description_list = node[1]['description'].split("<SEP>")

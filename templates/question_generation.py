@@ -1,5 +1,4 @@
 # pylint: disable=C0301
-
 TEMPLATE_SINGLE_EN: str = """The answer to a question is provided. Please generate a question that corresponds to the answer.
 
 ################

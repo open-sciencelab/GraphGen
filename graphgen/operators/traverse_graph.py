@@ -1,6 +1,5 @@
 import asyncio
 
-from numba.scripts.generate_lower_listing import description
 from tqdm.asyncio import tqdm as tqdm_async
 
 from models import OpenAIModel, NetworkXStorage, TraverseStrategy, Tokenizer, JsonKVStorage

@@ -5,13 +5,14 @@ import asyncio
 import time
 from typing import List, cast, Union
 from dataclasses import dataclass
+
 from tqdm.asyncio import tqdm as tqdm_async
 
 from models import Chunk, JsonKVStorage, OpenAIModel, NetworkXStorage, WikiSearch, Tokenizer, TraverseStrategy
 from models.storage.base_storage import StorageNameSpace
 from utils import create_event_loop, logger, compute_content_hash
 from .operators import (extract_kg, search_wikipedia, quiz, judge_statement, traverse_graph_by_edge,
-                        traverse_graph_atomically)
+                        traverse_graph_atomically, traverse_graph_for_multi_hop)
 
 
 sys_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -195,6 +196,12 @@ class GraphGen:
                                                       self.graph_storage,
                                                       self.traverse_strategy,
                                                       self.text_chunks_storage)
+        elif self.traverse_strategy.qa_form == "multi_hop":
+            results = await traverse_graph_for_multi_hop(self.synthesizer_llm_client,
+                                                            self.tokenizer_instance,
+                                                            self.graph_storage,
+                                                            self.traverse_strategy,
+                                                            self.text_chunks_storage)
         else:
             results = await traverse_graph_by_edge(self.synthesizer_llm_client, self.tokenizer_instance,
                                                    self.graph_storage, self.traverse_strategy, self.text_chunks_storage)

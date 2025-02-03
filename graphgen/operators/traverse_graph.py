@@ -3,7 +3,7 @@ import asyncio
 from tqdm.asyncio import tqdm as tqdm_async
 
 from models import OpenAIModel, NetworkXStorage, TraverseStrategy, Tokenizer, JsonKVStorage
-from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT
+from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT, MULTI_HOP_GENERATION_PROMPT
 from utils import detect_main_language, compute_content_hash, logger
 from graphgen.operators.split_graph import get_batches_with_strategy
 
@@ -398,4 +398,111 @@ async def traverse_graph_atomically(
             results.update(await result)
         except Exception as e: # pylint: disable=broad-except
             logger.error("Error occurred while generating questions: %s", e)
+    return results
+
+async def traverse_graph_for_multi_hop(
+    llm_client: OpenAIModel,
+    tokenizer: Tokenizer,
+    graph_storage: NetworkXStorage,
+    traverse_strategy: TraverseStrategy,
+    text_chunks_storage: JsonKVStorage,
+    max_concurrent: int = 1000
+) -> dict:
+    """
+    Traverse the graph for multi-hop
+
+    :param llm_client
+    :param tokenizer
+    :param graph_storage
+    :param traverse_strategy
+    :param text_chunks_storage
+    :param max_concurrent
+    :return: question and answer
+    """
+    assert traverse_strategy.qa_form == "multi_hop"
+
+    semaphore = asyncio.Semaphore(max_concurrent)
+
+    results = {}
+    edges = list(await graph_storage.get_all_edges())
+    nodes = list(await graph_storage.get_all_nodes())
+
+    edges, nodes = await _pre_tokenize(graph_storage, tokenizer, edges, nodes)
+
+    processing_batches = await get_batches_with_strategy(
+        nodes,
+        edges,
+        graph_storage,
+        traverse_strategy
+    )
+
+    processing_batches = assign_difficulty(processing_batches, traverse_strategy.difficulty_order)
+
+    async def _process_single_batch(
+        _process_batch: tuple
+    ) -> dict:
+        async with semaphore:
+            try:
+                language = "Chinese" if detect_main_language(_process_batch[0][0]['description']) == "zh" else "English"
+
+                _process_nodes = _process_batch[0]
+                _process_edges = _process_batch[1]
+
+                entities = [
+                    f"{_process_node['node_id']}: {_process_node['description']}" for _process_node in _process_nodes
+                ]
+
+                relations = [
+                    f"{_process_edge[0]} -- {_process_edge[1]}: {_process_edge[2]['description']}"
+                    for _process_edge in _process_edges
+                ]
+
+                entities_str = "\n".join([f"{index + 1}. {entity}" for index, entity in enumerate(entities)])
+                relations_str = "\n".join([f"{index + 1}. {relation}" for index, relation in enumerate(relations)])
+
+                prompt = MULTI_HOP_GENERATION_PROMPT[language].format(
+                    entities=entities_str,
+                    relationships=relations_str
+                )
+
+                context = await llm_client.generate_answer(prompt)
+
+                # post-process the context
+                if "Question:" in context and "Answer:" in context:
+                    question = context.split("Question:")[1].split("Answer:")[0].strip()
+                    answer = context.split("Answer:")[1].strip()
+                elif "问题：" in context and "答案：" in context:
+                    question = context.split("问题：")[1].split("答案：")[0].strip()
+                    answer = context.split("答案：")[1].strip()
+                else:
+                    return {}
+
+                question = question.strip("\"")
+                answer = answer.strip("\"")
+
+                logger.info("Question: %s", question)
+                logger.info("Answer: %s", answer)
+
+                return {
+                    compute_content_hash(question): {
+                        "question": question,
+                        "answer": answer,
+                        "loss": get_average_loss(_process_batch),
+                        "difficulty": _process_batch[2],
+                    }
+                }
+
+            except Exception as e: # pylint: disable=broad-except
+                logger.error("Error occurred while processing batch: %s", e)
+                return {}
+
+    for result in tqdm_async(
+        asyncio.as_completed([_process_single_batch(batch) for batch in processing_batches]),
+        total=len(processing_batches),
+        desc="Processing batches"
+    ):
+        try:
+            results.update(await result)
+        except Exception as e: # pylint: disable=broad-except
+            logger.error("Error occurred while processing batches: %s", e)
     return results

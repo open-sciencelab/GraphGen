@@ -1,4 +1,4 @@
-qa_form: atomic
+qa_form: multi-hop
 data_type: raw
 input_file: resources/examples/raw_demo.jsonl
 tokenizer: cl100k_base
@@ -10,9 +10,9 @@ traverse_strategy:
   - medium
   - medium
   edge_sampling: max_loss
-  expand_method: max_tokens
+  expand_method: max_width
   isolated_node_strategy: ignore
-  max_depth: 5
-  max_extra_edges: 5
+  max_depth: 1
+  max_extra_edges: 2
   max_tokens: 256
 web_search: false

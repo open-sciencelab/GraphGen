@@ -22,7 +22,7 @@ async def extract_kg(
 ):
     """
 
-    :param llm_client: teacher LLM model to extract entities and relationships
+    :param llm_client: Synthesizer LLM model to extract entities and relationships
     :param kg_instance
     :param tokenizer_instance
     :param chunks

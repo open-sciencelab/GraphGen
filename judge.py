@@ -41,6 +41,8 @@ if __name__ == '__main__':
         os.path.join(sys_path, "cache"),
         namespace="graph"
     )
+    average_loss = calculate_average_loss(graph_storage)
+    print(f"Average loss of the graph: {average_loss}")
 
     rephrase_storage = JsonKVStorage(
         os.path.join(sys_path, "cache"),
@@ -53,5 +55,5 @@ if __name__ == '__main__':
 
     new_graph.write_nx_graph(graph_file, args.output)
 
-    average_loss = calculate_average_loss(graph_storage)
+    average_loss = calculate_average_loss(new_graph)
     print(f"Average loss of the graph: {average_loss}")

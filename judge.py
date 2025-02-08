@@ -10,6 +10,20 @@ sys_path = os.path.abspath(os.path.dirname(__file__))
 
 load_dotenv()
 
+def calculate_average_loss(graph: NetworkXStorage):
+    """
+    Calculate the average loss of the graph.
+
+    :param graph: NetworkXStorage
+    :return: float
+    """
+    edges = asyncio.run(graph.get_all_edges())
+    total_loss = 0
+    for edge in edges:
+        total_loss += edge[2]['loss']
+    return total_loss / len(edges)
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -38,3 +52,6 @@ if __name__ == '__main__':
     graph_file = asyncio.run(graph_storage.get_graph())
 
     new_graph.write_nx_graph(graph_file, args.output)
+
+    average_loss = calculate_average_loss(graph_storage)
+    print(f"Average loss of the graph: {average_loss}")

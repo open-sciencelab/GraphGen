@@ -34,7 +34,7 @@ def yes_no_loss(tokens_list: List[List[Token]], ground_truth: List[str]) -> floa
     losses = []
     for i, tokens in enumerate(tokens_list):
         token = tokens[0]
-        assert token.text in ["yes", "no"]
+        assert token.text.lower() in ["yes", "no"]
         if token.text == ground_truth[i]:
             losses.append(1 - token.prob)
         else:
@@ -46,7 +46,7 @@ def yes_no_loss_entropy(tokens_list: List[List[Token]], ground_truth: List[str])
     losses = []
     for i, tokens in enumerate(tokens_list):
         token = tokens[0]
-        assert token.text in ["yes", "no"]
+        assert token.text.lower() in ["yes", "no"]
         if token.text == ground_truth[i]:
             losses.append(-math.log(token.prob))
         else:

@@ -27,6 +27,7 @@ def calculate_average_loss(graph: NetworkXStorage):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--input', type=str, default=os.path.join(sys_path, "cache"), help='path to load input graph')
     parser.add_argument('--output', type=str, default='cache/output/new_graph.graphml', help='path to save output')
 
     args = parser.parse_args()
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     )
 
     graph_storage = NetworkXStorage(
-        os.path.join(sys_path, "cache"),
+        args.input,
         namespace="graph"
     )
     average_loss = calculate_average_loss(graph_storage)

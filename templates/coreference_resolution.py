@@ -33,7 +33,7 @@ Please directly output the rewritten sentence without any additional information
 Output:
 """
 
-CONFERENCE_RESOLUTION_TEMPLATE = {
+COREFERENCE_RESOLUTION_TEMPLATE = {
     "en": TEMPLATE_EN,
     "zh": TEMPLATE_ZH
 }

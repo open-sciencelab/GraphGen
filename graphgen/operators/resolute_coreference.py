@@ -1,10 +1,10 @@
 from typing import List
 from models import Chunk
 from models import OpenAIModel
-from templates import CONFERENCE_RESOLUTION_TEMPLATE
+from templates import COREFERENCE_RESOLUTION_TEMPLATE
 from utils import detect_main_language
 
-async def resolute_conference(
+async def resolute_coreference(
         llm_client: OpenAIModel,
         chunks: List[Chunk]) -> List[Chunk]:
     """
@@ -23,7 +23,7 @@ async def resolute_conference(
     for _, chunk in enumerate(chunks[1:]):
         language = detect_main_language(chunk.content)
         result = await llm_client.generate_answer(
-            CONFERENCE_RESOLUTION_TEMPLATE[language].format(
+            COREFERENCE_RESOLUTION_TEMPLATE[language].format(
                 reference = results[0].content,
                 input_sentence = chunk.content
             )

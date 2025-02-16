@@ -1,4 +1,4 @@
-# GraphGen: Knowledge-Driven Synthetic Data Generation for Enhancing LLM Supervised Fine-Tuning
+# GraphGen: Enhancing Supervised Fine-Tuning for LLMs with Knowledge-Driven Synthetic Data Generation
 
 ```text
 ├── baselines/           # baseline methods

@@ -18,4 +18,12 @@
 └── README.md
 ```
 
+## Introduction
+
 GraphGen is a framework for synthetic data generation guided by knowledge graphs.
+
+Workflow:
+![workflow](../resources/images/workflow.png)
+
+User Interface:
+![ui](../resources/images/interface.png)

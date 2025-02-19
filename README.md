@@ -22,8 +22,8 @@
 
 GraphGen is a framework for synthetic data generation guided by knowledge graphs.
 
-Workflow:
-![workflow](../resources/images/workflow.png)
+### Workflow
+![workflow](resources/images/flow.png)
 
-User Interface:
-![ui](../resources/images/interface.png)
+### User Interface
+![ui](resources/images/interface.jpg)

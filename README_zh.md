@@ -3,7 +3,7 @@
 [English](README.md) | [简体中文](README_zh.md)
 
 <p align="center">
-  <img src="resources/images/favicon-border.png" width="200" height="200">
+  <img src="resources/images/favicon.png" width="200" height="200" style="border-radius: 50%">
 </p>
 
 ```text

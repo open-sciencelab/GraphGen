@@ -1,5 +1,11 @@
 # GraphGen: Enhancing Supervised Fine-Tuning for LLMs with Knowledge-Driven Synthetic Data Generation
 
+[English](README.md) | [简体中文](README_zh.md)
+
+<p align="center">
+  <img src="resources/images/favicon.png" width="200" height="200" style="border-radius: 50%">
+</p>
+
 ```text
 ├── baselines/           # baseline methods
 ├── cache/               # cache files

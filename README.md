@@ -7,10 +7,37 @@
   <a href="README.md">English</a> | <a href="README_zh.md">简体中文</a>
 </p>
 
+GraphGen: Enhancing Supervised Fine-Tuning for LLMs with Knowledge-Driven Synthetic Data Generation
 
-# GraphGen: Enhancing Supervised Fine-Tuning for LLMs with Knowledge-Driven Synthetic Data Generation
+<details>
+<summary><b>📚 Table of Contents</b></summary>
 
+- 📝 [What is GraphGen?](#-what-is-graphgen)
+- 🚀 [Quick Start](#-quick-start)
+- 📌 [Latest Updates](#-latest-updates)
+- 🌟 [Key Features](#-key-features)
+- 🏗️ [System Architecture](#-system-architecture)
+- ⚙️ [Configurations](#-configurations)
+- 📅 [Roadmap](#-roadmap)
 
+</details>
+
+## 📝 What is GraphGen?
+
+GraphGen is a framework for synthetic data generation guided by knowledge graphs.
+
+## 🚀 Quick Start
+
+### User Interface
+![ui](resources/images/interface.jpg)
+
+## 📌 Latest Updates
+
+## 🌟 Key Features
+
+## 🏗️ System Architecture
+
+### Directory Structure
 ```text
 ├── baselines/           # baseline methods
 ├── cache/               # cache files
@@ -29,12 +56,10 @@
 └── README.md
 ```
 
-## Introduction
-
-GraphGen is a framework for synthetic data generation guided by knowledge graphs.
 
 ### Workflow
 ![workflow](resources/images/flow.png)
 
-### User Interface
-![ui](resources/images/interface.jpg)
+## ⚙️ Configurations
+
+## 📅 Roadmap

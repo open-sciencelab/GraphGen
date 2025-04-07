@@ -5,9 +5,6 @@ from utils import logger
 
 from models import NetworkXStorage, TraverseStrategy
 
-# TODO: move to config
-loss_strategy: str = "only_edge" # only_edge, both
-
 async def _get_node_info(
     node_id: str,
     graph_storage: NetworkXStorage,
@@ -35,7 +32,8 @@ def _get_level_n_edges_by_max_width(
     max_depth: int,
     bidirectional: bool,
     max_extra_edges: int,
-    edge_sampling: str
+    edge_sampling: str,
+    loss_strategy: str = "only_edge"
 ) -> list:
     """
     Get level n edges for an edge.
@@ -111,7 +109,8 @@ def _get_level_n_edges_by_max_tokens(
         max_depth: int,
         bidirectional: bool,
         max_tokens: int,
-        edge_sampling: str
+        edge_sampling: str,
+        loss_strategy: str = "only_edge"
 ) -> list:
     """
     Get level n edges for an edge.
@@ -256,13 +255,13 @@ async def get_batches_with_strategy( # pylint: disable=too-many-branches
     for i, (node_name, _) in enumerate(nodes):
         node_dict[node_name] = i
 
-    if loss_strategy == "both":
+    if traverse_strategy.loss_strategy == "both":
         er_tuples = [([nodes[node_dict[edge[0]]], nodes[node_dict[edge[1]]]], edge) for edge in edges]
         edges = _sort_tuples(er_tuples, edge_sampling)
-    elif loss_strategy == "only_edge":
+    elif traverse_strategy.loss_strategy == "only_edge":
         edges = _sort_edges(edges, edge_sampling)
     else:
-        raise ValueError(f"Invalid loss strategy: {loss_strategy}")
+        raise ValueError(f"Invalid loss strategy: {traverse_strategy.loss_strategy}")
 
     for i, (src, tgt, _) in enumerate(edges):
         edge_adj_list[src].append(i)
@@ -288,13 +287,13 @@ async def get_batches_with_strategy( # pylint: disable=too-many-branches
             level_n_edges = _get_level_n_edges_by_max_width(
                 edge_adj_list, node_dict, edges, nodes, edge, max_depth,
                 traverse_strategy.bidirectional, traverse_strategy.max_extra_edges,
-                edge_sampling
+                edge_sampling, traverse_strategy.loss_strategy
             )
         else:
             level_n_edges = _get_level_n_edges_by_max_tokens(
                 edge_adj_list, node_dict, edges, nodes, edge, max_depth,
                 traverse_strategy.bidirectional, traverse_strategy.max_tokens,
-                edge_sampling
+                edge_sampling, traverse_strategy.loss_strategy
             )
 
         for _edge in level_n_edges:

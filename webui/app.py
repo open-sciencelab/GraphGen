@@ -38,15 +38,15 @@ def init_graph_gen(config: dict, env: dict) -> GraphGen:
 
     # Set up LLM clients
     graph_gen.synthesizer_llm_client = OpenAIModel(
-        model_name=env.get("TEACHER_MODEL", ""),
-        base_url=env.get("TEACHER_BASE_URL", ""),
-        api_key=env.get("TEACHER_API_KEY", "")
+        model_name=env.get("SYNTHESIZER_MODEL", ""),
+        base_url=env.get("SYNTHESIZER_BASE_URL", ""),
+        api_key=env.get("SYNTHESIZER_API_KEY", "")
     )
 
     graph_gen.training_llm_client = OpenAIModel(
-        model_name=env.get("STUDENT_MODEL", ""),
-        base_url=env.get("STUDENT_BASE_URL", ""),
-        api_key=env.get("STUDENT_API_KEY", "")
+        model_name=env.get("TRAINEE_MODEL", ""),
+        base_url=env.get("TRAINEE_BASE_URL", ""),
+        api_key=env.get("TRAINEE_API_KEY", "")
     )
 
     # Set up tokenizer
@@ -116,12 +116,12 @@ def run_graphgen(
     save_config(config)
 
     env = {
-        "TEACHER_MODEL": teacher_model,
-        "TEACHER_BASE_URL": teacher_base_url,
-        "TEACHER_API_KEY": teacher_api_key,
-        "STUDENT_MODEL": student_model,
-        "STUDENT_BASE_URL": student_base_url,
-        "STUDENT_API_KEY": student_api_key
+        "SYNTHESIZER_MODEL": teacher_model,
+        "SYNTHESIZER_BASE_URL": teacher_base_url,
+        "SYNTHESIZER_API_KEY": teacher_api_key,
+        "TRAINEE_MODEL": student_model,
+        "TRAINEE_BASE_URL": student_base_url,
+        "TRAINEE_API_KEY": student_api_key
     }
     save_env(env)
 

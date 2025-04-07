@@ -44,14 +44,14 @@ if __name__ == '__main__':
         raise ValueError(f"Invalid data type: {config['data_type']}")
 
     synthesizer_llm_client = OpenAIModel(
-        model_name=os.getenv("TEACHER_MODEL"),
-        api_key=os.getenv("TEACHER_API_KEY"),
-        base_url=os.getenv("TEACHER_BASE_URL")
+        model_name=os.getenv("SYNTHESIZER_MODEL"),
+        api_key=os.getenv("SYNTHESIZER_API_KEY"),
+        base_url=os.getenv("SYNTHESIZER_BASE_URL")
     )
     training_llm_client = OpenAIModel(
-        model_name=os.getenv("STUDENT_MODEL"),
-        api_key=os.getenv("STUDENT_API_KEY"),
-        base_url=os.getenv("STUDENT_BASE_URL")
+        model_name=os.getenv("TRAINEE_MODEL"),
+        api_key=os.getenv("TRAINEE_API_KEY"),
+        base_url=os.getenv("TRAINEE_BASE_URL")
     )
 
     traverse_strategy = TraverseStrategy(

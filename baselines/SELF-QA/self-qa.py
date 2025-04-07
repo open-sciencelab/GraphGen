@@ -131,9 +131,9 @@ if __name__ == "__main__":
     load_dotenv()
 
     llm_client = OpenAIModel(
-        model_name=os.getenv("TEACHER_MODEL"),
-        api_key=os.getenv("TEACHER_API_KEY"),
-        base_url=os.getenv("TEACHER_BASE_URL")
+        model_name=os.getenv("SYNTHESIZER_MODEL"),
+        api_key=os.getenv("SYNTHESIZER_API_KEY"),
+        base_url=os.getenv("SYNTHESIZER_BASE_URL")
     )
 
     self_qa = SelfQA(llm_client=llm_client)

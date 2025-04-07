@@ -95,7 +95,7 @@ def _post_process_synthetic_data(data):
 
 async def generate_synthetic_data_for_document(input_file, data_type):
     random.seed(42)
-    model_name = os.getenv("TEACHER_MODEL")
+    model_name = os.getenv("SYNTHESIZER_MODEL")
     task = BaselineTask(input_file, data_type)
 
     max_concurrent = 1000

@@ -10,10 +10,10 @@ async def gptqa(prompt: str,
           json_format: bool = False,
           temp: float = 1.0):
     client = AsyncOpenAI(
-        api_key=os.getenv("TEACHER_API_KEY"),
-        base_url=os.getenv("TEACHER_BASE_URL")
+        api_key=os.getenv("SYNTHESIZER_API_KEY"),
+        base_url=os.getenv("SYNTHESIZER_BASE_URL")
     )
-    openai_model_name = openai_model_name or os.getenv("TEACHER_MODEL")
+    openai_model_name = openai_model_name or os.getenv("SYNTHESIZER_MODEL")
 
     if json_format:
         completion = await client.chat.completions.create(

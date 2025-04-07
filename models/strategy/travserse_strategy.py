@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 
 from models.strategy.base_strategy import BaseStrategy
 
@@ -23,17 +23,10 @@ class TraverseStrategy(BaseStrategy):
     isolated_node_strategy: str = "add" # "add" or "ignore"
     # 难度顺序 ["easy", "medium", "hard"], ["hard", "medium", "easy"], ["medium", "medium", "medium"]
     difficulty_order: list = field(default_factory=lambda: ["medium", "medium", "medium"])
+    loss_strategy: str = "only_edge"  # only_edge, both
 
     def to_yaml(self):
-        return {
-            "traverse_strategy": {
-                "expand_method": self.expand_method,
-                "bidirectional": self.bidirectional,
-                "max_extra_edges": self.max_extra_edges,
-                "max_tokens": self.max_tokens,
-                "max_depth": self.max_depth,
-                "edge_sampling": self.edge_sampling,
-                "isolated_node_strategy": self.isolated_node_strategy,
-                "difficulty_order": self.difficulty_order
-            }
-        }
+        strategy_dict = {}
+        for f in fields(self):
+            strategy_dict[f.name] = getattr(self, f.name)
+        return {"traverse_strategy": strategy_dict}

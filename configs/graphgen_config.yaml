@@ -15,4 +15,5 @@ traverse_strategy:
   max_depth: 1
   max_extra_edges: 2
   max_tokens: 256
+  loss_strategy: only_edge
 web_search: false

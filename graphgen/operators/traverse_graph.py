@@ -7,9 +7,6 @@ from templates import ANSWER_REPHRASING_PROMPT, QUESTION_GENERATION_PROMPT, MULT
 from utils import detect_main_language, compute_content_hash, logger
 from graphgen.operators.split_graph import get_batches_with_strategy
 
-# TODO: move to config
-# TODO: if add isolated nodes, the loss strategy should be changed to "both"
-loss_strategy: str = "only_edge" # only_edge, both
 
 async def _pre_tokenize(graph_storage: NetworkXStorage,
                         tokenizer: Tokenizer,
@@ -101,22 +98,23 @@ def get_loss_tercile(losses: list) -> (float, float):
 
     return losses[q1_index], losses[q2_index]
 
-def assign_difficulty(subgraphs: list, difficulty_order: list) -> list:
+def assign_difficulty(subgraphs: list, difficulty_order: list, loss_strategy: str) -> list:
     """
-    Assign difficulty to subgraphs based on the loss
+    Assign difficulty to subgraphs based on the loss.
 
     :param subgraphs
     :param difficulty_order
+    :param loss_strategy
     :return
     """
     losses = []
     for subgraph in subgraphs:
-        loss = get_average_loss(subgraph)
+        loss = get_average_loss(subgraph, loss_strategy)
         losses.append(loss)
     q1, q2 = get_loss_tercile(losses)
 
     for i, subgraph in enumerate(subgraphs):
-        loss = get_average_loss(subgraph)
+        loss = get_average_loss(subgraph, loss_strategy)
         if loss < q1:
             # easy
             subgraphs[i] = (subgraph[0], subgraph[1], difficulty_order[0])
@@ -128,7 +126,7 @@ def assign_difficulty(subgraphs: list, difficulty_order: list) -> list:
             subgraphs[i] = (subgraph[0], subgraph[1], difficulty_order[2])
     return subgraphs
 
-def get_average_loss(batch: tuple) -> float:
+def get_average_loss(batch: tuple, loss_strategy: str) -> float:
     if loss_strategy == "only_edge":
         return sum(edge[2]['loss'] for edge in batch[1]) / len(batch[1])
     if loss_strategy == "both":
@@ -242,7 +240,7 @@ async def traverse_graph_by_edge(
                     compute_content_hash(context): {
                         "question": question,
                         "answer": context,
-                        "loss": get_average_loss(_process_batch),
+                        "loss": get_average_loss(_process_batch, traverse_strategy.loss_strategy),
                         "difficulty": _process_batch[2],
                     }
                 }
@@ -268,7 +266,7 @@ async def traverse_graph_by_edge(
                 final_results[compute_content_hash(qa['question'])] = {
                     "question": qa['question'],
                     "answer": qa['answer'],
-                    "loss": get_average_loss(_process_batch),
+                    "loss": get_average_loss(_process_batch, traverse_strategy.loss_strategy),
                     "difficulty": _process_batch[2],
                 }
             return final_results
@@ -286,7 +284,8 @@ async def traverse_graph_by_edge(
         traverse_strategy
     )
 
-    processing_batches = assign_difficulty(processing_batches, traverse_strategy.difficulty_order)
+    processing_batches = assign_difficulty(processing_batches, traverse_strategy.difficulty_order,
+                                           traverse_strategy.loss_strategy)
 
     for result in tqdm_async(asyncio.as_completed(
         [_process_single_batch(batch) for batch in processing_batches]
@@ -436,7 +435,8 @@ async def traverse_graph_for_multi_hop(
         traverse_strategy
     )
 
-    processing_batches = assign_difficulty(processing_batches, traverse_strategy.difficulty_order)
+    processing_batches = assign_difficulty(processing_batches, traverse_strategy.difficulty_order,
+                                           traverse_strategy.loss_strategy)
 
     async def _process_single_batch(
         _process_batch: tuple
@@ -487,7 +487,7 @@ async def traverse_graph_for_multi_hop(
                     compute_content_hash(question): {
                         "question": question,
                         "answer": answer,
-                        "loss": get_average_loss(_process_batch),
+                        "loss": get_average_loss(_process_batch, traverse_strategy.loss_strategy),
                         "difficulty": _process_batch[2],
                     }
                 }

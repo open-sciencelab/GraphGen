@@ -43,7 +43,7 @@ def init_graph_gen(config: dict, env: dict) -> GraphGen:
         api_key=env.get("SYNTHESIZER_API_KEY", "")
     )
 
-    graph_gen.training_llm_client = OpenAIModel(
+    graph_gen.trainee_llm_client = OpenAIModel(
         model_name=env.get("TRAINEE_MODEL", ""),
         base_url=env.get("TRAINEE_BASE_URL", ""),
         api_key=env.get("TRAINEE_API_KEY", "")

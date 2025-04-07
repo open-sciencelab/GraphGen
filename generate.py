@@ -48,7 +48,7 @@ if __name__ == '__main__':
         api_key=os.getenv("SYNTHESIZER_API_KEY"),
         base_url=os.getenv("SYNTHESIZER_BASE_URL")
     )
-    training_llm_client = OpenAIModel(
+    trainee_llm_client = OpenAIModel(
         model_name=os.getenv("TRAINEE_MODEL"),
         api_key=os.getenv("TRAINEE_API_KEY"),
         base_url=os.getenv("TRAINEE_BASE_URL")
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     graph_gen = GraphGen(
         unique_id=unique_id,
         synthesizer_llm_client=synthesizer_llm_client,
-        training_llm_client=training_llm_client,
+        trainee_llm_client=trainee_llm_client,
         if_web_search=config['web_search'],
         tokenizer_instance=Tokenizer(
             model_name=config['tokenizer']

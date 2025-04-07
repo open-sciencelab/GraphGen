@@ -85,12 +85,12 @@ def run_graphgen(
         edge_sampling: str,
         isolated_node_strategy: str,
         difficulty_level: str,
-        teacher_model: str,
-        teacher_base_url: str,
-        teacher_api_key: str,
-        student_model: str,
-        student_base_url: str,
-        student_api_key: str,
+        synthesizer_model: str,
+        synthesizer_base_url: str,
+        synthesizer_api_key: str,
+        trainee_model: str,
+        trainee_base_url: str,
+        trainee_api_key: str,
         quiz_samples: int,
         progress=gr.Progress()
 ) -> str:
@@ -116,12 +116,12 @@ def run_graphgen(
     save_config(config)
 
     env = {
-        "SYNTHESIZER_MODEL": teacher_model,
-        "SYNTHESIZER_BASE_URL": teacher_base_url,
-        "SYNTHESIZER_API_KEY": teacher_api_key,
-        "TRAINEE_MODEL": student_model,
-        "TRAINEE_BASE_URL": student_base_url,
-        "TRAINEE_API_KEY": student_api_key
+        "SYNTHESIZER_MODEL": synthesizer_model,
+        "SYNTHESIZER_BASE_URL": synthesizer_base_url,
+        "SYNTHESIZER_API_KEY": synthesizer_api_key,
+        "TRAINEE_MODEL": trainee_model,
+        "TRAINEE_BASE_URL": trainee_base_url,
+        "TRAINEE_API_KEY": trainee_api_key
     }
     save_env(env)
 
@@ -190,12 +190,12 @@ with gr.Blocks(title="GraphGen Configuration") as iface:
         # Model Configuration Column
         with gr.Column(scale=1):
             gr.Markdown("### Model Configuration")
-            teacher_model = gr.Textbox(label="Synthesizer Model")
-            teacher_base_url = gr.Textbox(label="Synthesizer Base URL")
-            teacher_api_key = gr.Textbox(label="Synthesizer API Key", type="password")
-            student_model = gr.Textbox(label="Trainee Model")
-            student_base_url = gr.Textbox(label="Trainee Base URL")
-            student_api_key = gr.Textbox(label="Trainee API Key", type="password")
+            synthesizer_model = gr.Textbox(label="Synthesizer Model")
+            synthesizer_base_url = gr.Textbox(label="Synthesizer Base URL")
+            synthesizer_api_key = gr.Textbox(label="Synthesizer API Key", type="password")
+            trainee_model = gr.Textbox(label="Trainee Model")
+            trainee_base_url = gr.Textbox(label="Trainee Base URL")
+            trainee_api_key = gr.Textbox(label="Trainee API Key", type="password")
 
     # Submission and Output Rows
     with gr.Row():
@@ -210,8 +210,8 @@ with gr.Blocks(title="GraphGen Configuration") as iface:
             input_file, data_type, qa_form, tokenizer, web_search,
             expand_method, bidirectional, max_extra_edges, max_tokens,
             max_depth, edge_sampling, isolated_node_strategy, difficulty_level,
-            teacher_model, teacher_base_url, teacher_api_key,
-            student_model, student_base_url, student_api_key,
+            synthesizer_model, synthesizer_base_url, synthesizer_api_key,
+            trainee_model, trainee_base_url, trainee_api_key,
             quiz_samples
         ],
         outputs=output

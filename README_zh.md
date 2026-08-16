@@ -373,5 +373,5 @@ GraphGen 首先根据源文本构建细粒度的知识图谱，然后利用期�
 
 ## 📅 星标历史
 
-[![Star History Chart](https://api.star-history.com/svg?repos=InternScience/GraphGen&type=Date)](https://www.star-history.com/#InternScience/GraphGen&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=InternScience/GraphGen&type=Date)](https://star-history.dera.page/#InternScience/GraphGen&Date)
 

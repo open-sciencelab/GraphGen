@@ -373,4 +373,4 @@ This project is licensed under the [Apache License 2.0](LICENSE).
 
 ## 📅 Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=InternScience/GraphGen&type=Date)](https://www.star-history.com/#InternScience/GraphGen&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=InternScience/GraphGen&type=Date)](https://star-history.dera.page/#InternScience/GraphGen&Date)

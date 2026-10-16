@@ -1,6 +1,6 @@
 # GraphGen Fork 1.0.0 — initial multi-project SDK release
 
-Tag: `graphgen-fork-v1.0.0` (to be created only after passing release validation).
+Tag: `graphgen-fork-v1.0.0`.
 
 Distribution version: `1.0.0` (`graphg`). Upstream base: `InternScience/GraphGen` commit `3a3eb097318d34b07f6f31cb60de5b20712d65ce`.
 

@@ -93,3 +93,15 @@ SAG 思想移植（MIT，arXiv:2606.15971；参考源码 `workspace/sag_referenc
   `tests/test_run_graphgen_defaults.py` 为契约回归（rft 环境按路径加载
   纯 stdlib 模块校验）；
 - 事件 profile 合同和真实生成由 GraphGen venv smoke 验收。
+
+## #9 Ray LLM actor concurrency and logger context fallback (1.1.0)
+
+- `LLMFactory.create_llm` reads `GRAPHGEN_LLM_ACTOR_MAX_CONCURRENCY`; default/`1` preserve Ray's serial async actor behavior, values greater than one pass an explicit bounded `max_concurrency` actor option.
+- `get_current_logger` falls back to the standard `GraphGen` logger only when the ContextVar is absent. This does not catch or replace LLM/model errors and does not fabricate generation output.
+- Covered by `tests/unit_tests/utils/test_init_llm_actor_concurrency.py` and `tests/unit_tests/utils/test_log.py`.
+
+## #9 Ray LLM actor concurrency and logger context fallback (1.1.0)
+
+- `LLMFactory.create_llm` reads `GRAPHGEN_LLM_ACTOR_MAX_CONCURRENCY`; default/`1` preserve Ray's serial async actor behavior, values greater than one pass an explicit bounded `max_concurrency` actor option.
+- `get_current_logger` falls back to the standard `GraphGen` logger only when the ContextVar is absent. This does not catch or replace LLM/model errors and does not fabricate generation output.
+- Covered by `tests/unit_tests/utils/test_init_llm_actor_concurrency.py` and `tests/unit_tests/utils/test_log.py`.

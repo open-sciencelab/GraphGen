@@ -129,19 +129,26 @@ class LLMFactory:
             )
 
         actor_name = f"Actor_LLM_{model_type}"
+        num_gpus = float(config.pop("num_gpus", 0))
+        # Ray async actor 默认 max_concurrency=1：所有 worker 的 LLM 请求在
+        # 单 actor 内串行，是 GraphGen 出题吞吐的瓶颈。PMS fork 允许经环境
+        # 变量调高并发（async 方法并发安全），上游默认行为不变（未设置=1）。
+        max_concurrency = int(os.environ.get("GRAPHGEN_LLM_ACTOR_MAX_CONCURRENCY", "1"))
+        actor_options: Dict[str, Any] = {
+            "name": actor_name,
+            "num_gpus": num_gpus,
+            "get_if_exists": True,
+        }
+        if max_concurrency > 1:
+            actor_options["max_concurrency"] = max_concurrency
         try:
             actor_handle = ray.get_actor(actor_name)
             print(f"Using existing Ray actor: {actor_name}")
         except ValueError:
             print(f"Creating Ray actor for LLM {model_type} with backend {backend}.")
-            num_gpus = float(config.pop("num_gpus", 0))
             actor_handle = (
                 ray.remote(LLMServiceActor)
-                .options(
-                    name=actor_name,
-                    num_gpus=num_gpus,
-                    get_if_exists=True,
-                )
+                .options(**actor_options)
                 .remote(backend, config)
             )
 

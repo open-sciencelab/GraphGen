@@ -105,3 +105,7 @@ SAG 思想移植（MIT，arXiv:2606.15971；参考源码 `workspace/sag_referenc
 - `LLMFactory.create_llm` reads `GRAPHGEN_LLM_ACTOR_MAX_CONCURRENCY`; default/`1` preserve Ray's serial async actor behavior, values greater than one pass an explicit bounded `max_concurrency` actor option.
 - `get_current_logger` falls back to the standard `GraphGen` logger only when the ContextVar is absent. This does not catch or replace LLM/model errors and does not fabricate generation output.
 - Covered by `tests/unit_tests/utils/test_init_llm_actor_concurrency.py` and `tests/unit_tests/utils/test_log.py`.
+
+## #10 Event extraction prompt: no example-id copying (1.1.1)
+
+- `templates/event_profiles/pms_event.v1/prompt.zh.txt` requires the anchor to be taken verbatim from the fragment and forbids copying the illustrative id, matching the generation-policy hardening in PMS `pms_policy.v2_2`.

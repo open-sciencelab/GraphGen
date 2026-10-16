@@ -1,6 +1,6 @@
 # GraphGen 1.1.2 release manifest
 
-Status: validation evidence for the release candidate; commit SHA is recorded after final release commit.
+Status: final release candidate built from commit `49ec1ac8dfe9c15204f979c49887f5614a5adf6d`; publication record remains pending.
 
 ## Source identity
 
@@ -35,7 +35,9 @@ Built in a disposable output directory with `uv build --offline --out-dir /tmp/g
 
 ## Publication record
 
-- Final commit SHA: pending
+- Final commit SHA: `49ec1ac8dfe9c15204f979c49887f5614a5adf6d`
+- Final commit wheel: `graphg-1.1.2-py3-none-any.whl` — SHA-256 `084ae2a0cf0b5afd111fd74e106295face1f892def587db3fca5fc620e1b092b`
+- Final commit sdist: `graphg-1.1.2.tar.gz` — SHA-256 `9f83b6f7565339a4ae4379fc8176807dfa28fc0684651dae381472217dc740c3`
 - Tag creation: pending; must verify local and `fork` remote tag absence first.
 - Fork branch/tag push: pending maintainer action after final diff review.
 - PMS dependency pin update and locked sync: pending 1.1.2 commit SHA after publication.

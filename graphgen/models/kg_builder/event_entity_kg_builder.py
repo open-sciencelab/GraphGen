@@ -115,6 +115,7 @@ class EventEntityKGBuilder:
                         "description": f"事件参与者：{entity['name']}（{entity['type']}）—— {entity['description']}",
                         "source_id": chunk.id,
                         "role": entity["type"],
+                        "event_member": True,
                     }
                 )
         return dict(nodes), dict(edges)
@@ -197,6 +198,9 @@ class EventEntityKGBuilder:
             } | {
                 sid for sid in str(existing_edge.get("source_id", "")).split("<SEP>") if sid
             }
+            role = sorted(
+                {str(dp["role"]) for dp in edge_list if dp.get("role")}
+            )
             edge_data = {
                 "src_id": event_id,
                 "tgt_id": participant_id,
@@ -204,6 +208,8 @@ class EventEntityKGBuilder:
                 "source_id": "<SEP>".join(sorted(source_ids)),
                 "length": self._merger.tokenizer.count_tokens(merged),
             }
+            if role:
+                edge_data["role"] = "<SEP>".join(role)
             kg_instance.upsert_edge(event_id, participant_id, edge_data=edge_data)
             return edge_data
         return await self._merger.merge_edges(edges_data, kg_instance=kg_instance)

@@ -72,7 +72,7 @@ class SchemaGuidedExtractor(BaseExtractor):
         # that seeds the opening of the expected output; non-empty responses
         # are never retried or modified.
         if not response.strip() and os.environ.get("GRAPHGEN_EMPTY_EXTRACTION_PREFILL", "0") == "1":
-            prefill = '("entity"<|>'
+            prefill = "{"
             logger.warning("Empty extraction response; retrying with assistant prefill")
             response = await self.llm_client.generate_answer(
                 prompt, assistant_prefill=prefill

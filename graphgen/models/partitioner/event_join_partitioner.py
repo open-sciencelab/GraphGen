@@ -63,7 +63,7 @@ class EventJoinPartitioner(BasePartitioner):
             token_sum = 0
             anchor = _anchor(seed[0])
             if require_same_anchor and not anchor:
-                raise ValueError(f"event_join_anchor_missing:{seed[0]}")
+                return None
             queue = deque([seed[0]])
 
             while queue:

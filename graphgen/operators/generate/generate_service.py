@@ -146,7 +146,11 @@ class GenerateService(BaseOperator):
             for qa_pair in qa_pairs:
                 support = qa_pair.pop("support", None) if isinstance(qa_pair, dict) else None
                 support = view["resolve_support"](support)
-                support = validate_support(support, set(view["canonical_nodes"]))
+                support = validate_support(
+                    support,
+                    set(view["canonical_nodes"]),
+                    set(view["canonical_edges"]),
+                )
                 if support:
                     qa_pair["support"] = support
                 res = self.generator.format_generation_results(

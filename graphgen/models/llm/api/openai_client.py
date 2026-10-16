@@ -179,10 +179,6 @@ class OpenAIClient(BaseLLMWrapper):
             prompt_tokens += len(self.tokenizer.encode(message["content"]))
         estimated_tokens = prompt_tokens + kwargs["max_tokens"]
 
-        if self.request_limit:
-            await self.rpm.wait(silent=True)
-            await self.tpm.wait(estimated_tokens, silent=True)
-
         # PMS fork (docs/PMS_PATCHES.md #4): bounded retry on empty responses.
         # Thinking backends occasionally return only <think> content that is
         # stripped to nothing downstream; retry instead of propagating an empty
@@ -197,6 +193,10 @@ class OpenAIClient(BaseLLMWrapper):
 
         content = ""
         for attempt in range(empty_retries + 1):
+            if self.request_limit:
+                await self.rpm.wait(silent=True)
+                await self.tpm.wait(estimated_tokens, silent=True)
+
             completion = await self.client.chat.completions.create(  # pylint: disable=E1125
                 model=self.model, **kwargs
             )

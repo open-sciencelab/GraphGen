@@ -34,7 +34,7 @@ class BuildKGService(BaseOperator):
         if self.kg_method == "event_entity":
             from graphgen.templates.event_profile_loader import load_event_profile
 
-            self.event_profile = load_event_profile(self.event_profile).profile_id
+            load_event_profile(self.event_profile)
 
     def process(self, batch: list) -> Tuple[list, dict]:
         """

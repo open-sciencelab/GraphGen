@@ -63,6 +63,7 @@ def build_generation_view(item: dict[str, Any]) -> dict[str, Any]:
         for node_id, data in original_nodes
     ]
     edges = []
+    canonical_edges = set()
     support_aliases = {name: node_id for node_id, name in display_by_id.items()}
     for edge in item.get("edges", []):
         if not isinstance(edge, (list, tuple)) or len(edge) != 3:
@@ -71,10 +72,17 @@ def build_generation_view(item: dict[str, Any]) -> dict[str, Any]:
         display_source = display_by_id.get(str(source), source)
         display_target = display_by_id.get(str(target), target)
         edges.append((display_source, display_target, data))
-        if str(source) in display_by_id:
-            support_aliases[f"{display_source} - {display_target}"] = f"{source} - {target}"
-        elif str(target) in display_by_id:
-            support_aliases[f"{display_source} - {display_target}"] = f"{source} - {target}"
+        canonical_edge = f"{source} - {target}"
+        canonical_edges.add(canonical_edge)
+        if str(source) in display_by_id or str(target) in display_by_id:
+            support_aliases[f"{display_source} -- {display_target}"] = canonical_edge
+            support_aliases[f"{display_source} - {display_target}"] = canonical_edge
+            support_aliases[f"{display_target} -- {display_source}"] = (
+                f"{target} - {source}"
+            )
+            support_aliases[f"{display_target} - {display_source}"] = (
+                f"{target} - {source}"
+            )
 
     def resolve_support(support: Optional[dict[str, Any]]) -> Optional[dict[str, Any]]:
         if not support:
@@ -91,15 +99,26 @@ def build_generation_view(item: dict[str, Any]) -> dict[str, Any]:
         "nodes": nodes,
         "edges": edges,
         "canonical_nodes": [str(node_id) for node_id, _ in original_nodes],
+        "canonical_edges": canonical_edges,
         "resolve_support": resolve_support,
     }
 
 
-def validate_support(support: Optional[dict[str, Any]], node_names: set[str]) -> Optional[dict[str, Any]]:
-    """Keep support only when all citations point to existing partition nodes."""
+def validate_support(
+    support: Optional[dict[str, Any]],
+    node_names: set[str],
+    edge_names: Optional[set[str]] = None,
+) -> Optional[dict[str, Any]]:
+    """Keep support only when citations reference known partition nodes or edges."""
     if not support:
         return None
     cited = support.get("cited") or []
-    if cited and set(cited) <= node_names:
+    if not cited:
+        return None
+    if all(
+        citation in node_names
+        or (edge_names is not None and citation in edge_names)
+        for citation in cited
+    ):
         return support
     return None
